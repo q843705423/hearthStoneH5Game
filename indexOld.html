@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title></title>
+		<script type="text/javascript" src="js/jquery.js">	</script>
+		
+		<script type="text/javascript">
+			/*
+			 *画布和画笔 
+			 */
+			
+			/**
+			 * 鼠标的位置
+			 */
+			
+			var mymouseX = 0;
+			var mymouseY = 0;
+		
+			/**
+			 * 时钟周期
+			 */
+			var T = 100;	//多久画一次
+			var allT = 0;	//每到一次时钟周期，记一次数
+			
+			var turnover =0; //判断回合是否结束
+			var cangetCard = 1; //判断是否可以抽卡
+			
+			/**
+			 * 人物的属性
+			 */
+			var heroHP = 30;		
+			var yourMaxCrystal = 7;		//你的最大法力水晶
+			var yourNowCrystal = 6; 	//你现在的法力水晶
+		
+			
+			var computerHP = 30;
+			var computerMaxCrystal = 0;//电脑的最大法力水晶
+			var computerNowCrystal = 0;//电脑的现在法力水晶
+			var computerCardNum = 3;   //电脑的手牌数
+			/**
+			 * 所有卡片的属性
+			 */
+			var cardWidth = 80;
+			var cardHeight = 120;
+			
+			var str= "";
+			
+			var info = "";//在场上显示的信息
+			var infoLastTime = 0;//显示的时间
+			
+			var card = [
+				{name:"潜水鳄",cost:2,attack:2,HP:3,font:"水生怪物,喜欢吃臭鱼"},
+				{name:"软泥怪",cost:2,attack:3,HP:2,font:"产生于沼气,喜欢看星星"},
+				{name:"雪山巨人",cost:2,attack:4,HP:5,font:"一点也不怕冷"},
+				{name:"森金持盾卫士",cost:4,attack:3,HP:5,font:"如果你喜欢巨魔和沙尘的话，森金村还是个不错的地方。"},
+				{name:"红龙",cost:9,attack:8,HP:8,font:"危险的恐怖生物"},
+				{name:"火球术",attack:'法术',HP:' ',cost:4,font:"选择一个目标，对其造成6点伤害"},
+				{name:"变形术",attack:'法术',HP:' ',cost:4,font:"选择一个随从，把其变成一个羊(0,1)"},
+				{name:"刺杀",attack:'法术',HP:' ',cost:5,font:"选择一个随从,使他离开场上",src:"img/card_img/kill.png"},
+				{name:"真言盾",attack:'法术',HP:' ',cost:1,font:"选择一个随从,使其获得+2生命值,并且我方可以再抽一张牌"},
+//				{name:"暗杀",attack:'法术',HP:' ',cost:4,font:"选择一个随从,使他离开场上"},
+			];
+			//声明一个卡牌对象,可以置于我方或者对方的牌里的
+			function cardObj(name,cost,attack,HP,font,posx,posy,posi,sleeping){
+				this.name = name;
+				this.cost = cost;
+				this.attack = attack;
+				this.HP = HP;
+				this.font = font;
+				this.posx = posx;
+				this.posy = posy;
+				this.posi = posi;
+				this.sleeping = sleeping;
+				return this;
+			}
+			
+			
+			/**
+			 *我方拥有卡片
+			 * 其中posx 表示卡片的位置,形式为100+i*(cardWidth+10) 
+			 * posy 为450  两个是物理位置
+			 * posi 逻辑位置  1.表示手上   2.表示在场上,3表示在墓地
+			 * 
+			 */
+			
+			var mycard = [
+			//	{name:"潜水鳄",cost:1,attack:2,HP:3,font:"水生怪物,喜欢吃臭鱼",posx:100+0*(cardWidth+10),posy:450,posi:1,sleeping:1},
+			//	{name:"雪山巨人",cost:2,attack:4,HP:5,font:"一点也不怕冷",posx:100+1*(cardWidth+10),posy:450,posi:1,sleeping:1},
+			//	{name:"红龙",cost:9,attack:8,HP:8,font:"危险的恐怖生物",posx:100+2*(cardWidth+10),posy:450,posi:3,sleeping:1},	
+			];
+			/*
+			 * 电脑的卡牌
+			 */
+			var computercard = [
+			
+			
+			];
+			/**
+			 * 给我和电脑进行初始化的方法
+			 */
+			//var canInMyHand= [1,1,1,1,1,1,1,1,1,1];			//可以放在我手上的位置 公式为 100+i*(cardWidth+10)
+			function myinit(){
+				
+				for(var i=0;i<3;i++){
+					var ran = Math.floor(Math.random()*card.length);
+					var obj = card[ran];	
+			
+					mycard.push({name:obj.name,cost:obj.cost,attack:obj.attack,HP:obj.HP,font:obj.font,posx:50+100*i,posy:450,posi:1,sleeping:1});
+					//cardObj()
+				}
+				//给电脑
+				for(var i=0;i<3;i++){
+					var ran = Math.floor(Math.random()*card.length);
+					var obj = card[ran];			
+					computercard.push({name:obj.name,cost:obj.cost,attack:obj.attack,HP:obj.HP,font:obj.font,posx:100*i+50,posy:450,posi:1,sleeping:1});
+					//cardObj()
+				}
+
+				
+				
+
+			}
+			/**
+			 * 
+			 * 
+			 */
+			function gameisover(){
+				if(heroHP<=0){
+					heroHP = 0;
+					alert("您输了这场比赛");
+				}
+				if(computerHP<=0){
+					computerHP = 0;
+					alert("恭喜您获得胜利");
+				}
+				
+			}
+			
+			/**
+			 * 画电脑的头像
+			 */
+			var computerHeadx = 200;
+			var computerHeady = 0;
+			function drawComputer(){
+				var mycan = document.getElementById("mycan");
+				var cxt = mycan.getContext("2d");
+				cxt.save();
+				cxt.beginPath();
+				cxt.rect(computerHeadx,computerHeady,80,120);
+				cxt.fillText("凯撒大帝",220,60);
+				cxt.stroke();
+				cxt.restore();
+				cxt.closePath();
+				
+			}
+			
+			
+			
+			//所有要移动的信息都写在这里
+			var moveArray = [
+			//	{idx:0,beginT:1,last:39,beginposx:100,beginposy:450,endposx:100,endposy:200},
+				
+			];
+			function moveCardAll(){
+			
+				for(var i=0;i<moveArray.length;i++){
+					var obj = moveArray[i];
+					
+					var flag = moveCard(obj.idx,obj.beginT,obj.last,obj.beginposx,obj.beginposy,obj.endposx,obj.endposy);
+					
+					
+				}
+				
+			}
+			/**
+			 * 
+			 * @param {int} 	该卡在玩家手中的索引
+			 * @param {Object} ·刚刚开始的时钟周期
+			 * @param {Object} 	结束的时钟周期
+			 * @param {Object} 	开始的位置x
+			 * @param {Object} 	开始的位置y
+			 * @param {Object} 	结束的位置x
+			 * @param {Object} 	结束的位置y
+			 */
+			function moveCard(idx,beginT,last,beginposx,beginposy,endposx,endposy){
+		
+				if(allT>beginT+last){
+					return 0;
+				
+				}
+				var dx = (endposx-beginposx)/last;
+				var dy = (endposy-beginposy)/last;
+		
+				mycard[idx].posx += dx;
+				mycard[idx].posy += dy;
+				return 1;
+				
+			}
+			function showHP(){
+				var mycan = document.getElementById("mycan");
+				var cxt = mycan.getContext("2d");
+				cxt.save();
+				cxt.beginPath();
+				cxt.fillStyle = "Red";
+				cxt.fillText("对方的血量为"+computerHP,700,200);
+				cxt.restore();
+				cxt.closePath();
+				cxt.save();
+				cxt.beginPath();
+				cxt.fillStyle = "green";
+				cxt.fillText("我方的血量为"+heroHP,700,400);
+				cxt.restore();
+				cxt.closePath();
+				
+			}
+			
+			/**
+			 * 画基础设施,即静物
+			 */
+			function drawBase(){
+				
+				var mycan = document.getElementById("mycan");
+				var cxt = mycan.getContext("2d");
+				cxt.clearRect(0,0,800,600);
+				drawButton();	
+				drawThreeLine();
+				drawMycard();
+			
+				privatemyshow(info);
+				drawDetailedDescription();
+				tuo();
+				drawCrystal();
+				OurgetCard();
+				show();
+				drawMagicLine();
+				moveCardAll();
+				computerOp();
+				drawComputerCard();
+				drawComputer();
+				showHP();
+				allT+=1;
+				gameisover();
+	
+				
+			}
+			
+			/**
+			 * 画法力水晶
+			 */
+			function drawCrystal(){
+				var mycan  = document.getElementById("mycan");
+				var cxt  = mycan.getContext("2d");
+				cxt.save();
+				cxt.beginPath();
+				cxt.fillStyle = "blue";
+				cxt.fillText("电脑的法力水晶:"+computerNowCrystal+"/"+computerMaxCrystal,600,120);
+				cxt.fillText("电脑的手牌数:"+computerCardNum,600,100);
+				cxt.closePath();
+				
+				for(var i=0;i<10;i++){	//画您的10个法力水晶
+					cxt.beginPath();
+					
+					cxt.arc(580+i*22,580,8,0,2*Math.PI,true);
+					cxt.fillStyle = "#000";
+					cxt.stroke();
+					
+					cxt.closePath();
+					
+				}
+				
+				
+				for(var i=0;i<yourMaxCrystal;i++){	//画您的最大个法力水晶
+					cxt.beginPath();
+				
+					cxt.arc(580+i*22,580,8,0,2*Math.PI,true);
+					cxt.fillStyle = "#ccc";
+					cxt.fill();
+					cxt.closePath();
+					
+				}
+				
+				for(var i=0;i<yourNowCrystal;i++){	//画您拥有的法力水晶
+					cxt.beginPath();
+				
+					cxt.arc(580+i*22,580,8,0,2*Math.PI,true);
+					cxt.fillStyle = "blue";
+					cxt.fill();
+					cxt.closePath();
+					
+				}
+				
+				cxt.restore();
+			}
+			/**
+			 * 画对方场上的卡片
+			 */
+			function drawComputerCard(){
+				
+				for(var i=0;i<computercard.length;i++){
+					if(computercard[i].posi!=2){
+						continue;
+					}
+					drawOneCard(computercard[i],computercard[i].posx,computercard[i].posy);
+					
+				}
+				
+				
+			}
+			
+			
+			/**
+			 * 画我方拥有的卡片
+			 */
+			function drawMycard(){
+				var mycan = document.getElementById("mycan");
+				var cxt = mycan.getContext("2d");
+				var posy = 450;
+				var posx = 100;
+				for(var i=0;i<mycard.length;i++){
+					if(mycard[i].posi==1){			//说明该卡在手牌
+
+						drawOneCard(mycard[i],mycard[i].posx,mycard[i].posy,cxt);
+						
+					}else if(mycard[i].posi==2){	//说明该牌在场上
+
+						drawOneCard(mycard[i],mycard[i].posx,mycard[i].posy,cxt);
+				
+					}else{							//说明该牌在墓地
+						
+						
+					}
+
+				}
+				
+			}
+
+			
+			/**
+			 * 计算手上还有哪个位置可以放卡
+			 * 
+			 */
+			 function handWhereCanPut(){
+
+				for(var i=0;i<7;i++){	//扫描手上7个位置
+					var canput = 1;
+				
+					for(var j=0;j<mycard.length;j++){//看自己手上的牌是否在该位置
+					
+						if(mycard[j].posi!=1)continue;//如果不在手上就算了
+					//	myshowinfoParam("i="+i+",j="+j+","+pointinrec(50+i*100,500,mycard[j].posx,mycard[j].posy),20);
+					//	alert(mycard[j].posx+","+mycard[j].posy);
+						if(pointinrec(50+i*100,450,mycard[j].posx,mycard[j].posy)==0){		//不可放
+							
+							canput = 0;
+							break;
+						}
+					}
+					if(canput==1)return i;
+					
+				}
+				return -1;
+			}
+			/**
+			 * 判断一个点(px,py)是否在矩形里
+			 * @param {Object} px
+			 * @param {Object} py
+			 * @param {Object} x1
+			 * @param {Object} y1
+			 * @param {Object} x2
+			 * @param {Object} y2
+			 */
+			function pointinrec(px,py,beginx,beginy){	//返回0表示在里面
+				
+				if(px<beginx)return 10;
+				if(py<beginy)return 20;
+				if(px>beginx+cardWidth)return 30;
+				if(py>beginy+cardHeight)return 40;
+				return 0;
+			}
+			
+			/**
+			 * 通用的给该卡的obj,以及起始位置，画出该卡的函数
+			 * @param {Object} 被画的卡片对象
+			 * @param {Object} 被画的起始位置x坐标
+			 * @param {Object} 被画的起始位置y坐标
+			 */
+			function drawOneCard(obj,beginx,beginy){
+				var mycan = document.getElementById("mycan");
+				var cxt = mycan.getContext("2d");
+				cxt.save();
+				cxt.beginPath();
+				
+				cxt.rect(beginx,beginy,cardWidth,cardHeight);
+				cxt.stroke();
+				cxt.fillStyle = "green";
+				cxt.fillText(obj.name,obj.posx,obj.posy+20);
+						
+				cxt.fillStyle = "red";
+				cxt.fillText(obj.HP,obj.posx+60,obj.posy+110);
+				
+				cxt.fillStyle = "black";
+				cxt.fillText(obj.attack,obj.posx+2,obj.posy+110);
+				
+				cxt.fillStyle = "blue";
+				cxt.fillText(obj.cost,obj.posx+60,obj.posy+20);
+				if(obj.posi==2&&obj.sleeping==1){
+					cxt.fillStyle = "plum";
+					cxt.fillText("正在休息",obj.posx+20,obj.posy+60);
+				}
+				
+				
+				cxt.closePath();
+				
+				
+				
+			
+						
+						
+						
+				
+				cxt.restore();
+				
+				//TODO
+			}
+			
+
+		
+			
+			
+			/**
+			 * 我方抽卡
+			 */
+			
+			var timerForMove = -1;
+			function OurgetCard(){
+				if(turnover==1)return ; //还没到我方回合
+				var  putpos= handWhereCanPut();
+		//		myshowinfoParam(putpos,10)
+				if(cangetCard==0)return ;
+				yourMaxCrystal += yourMaxCrystal<10?1:0;
+				yourNowCrystal = yourMaxCrystal;
+				cangetCard = 0;
+				
+				if(putpos==-1){//手牌已经满了
+					myshowinfoParam("我的手牌已经满了",10);
+					
+					
+				}
+		
+				if(putpos!=-1){
+					
+					
+					for(var i=0;i<1;i++){
+						var ran = Math.floor(Math.random()*card.length);
+						var obj = card[ran]	;	
+						//模拟卡片从卡组到手上的动画效果
+						var newobj = {name:obj.name,cost:obj.cost,attack:obj.attack,HP:obj.HP,font:obj.font,posx:700,posy:450,posi:1,sleeping:1};
+						pos = mycard.length;	//新得到的牌一定在最后面
+						
+						mycard.push(newobj);
+				//		canInMyHand[putpos] = mycard.length-1;	//抽到手上，占个位置
+						moveArray.push({idx:mycard.length-1,beginT:allT,last:30,beginposx:700,beginposy:450,endposx:putpos*100+50,endposy:450});
+						
+						
+					}
+					
+					cangetCard = 0;
+				}
+				
+				
+			}
+			
+			
+			/**
+			 * 电脑开始模拟人进行操作
+			 * 
+			 *///TODO 电脑进行操作
+			var liucheng = 0;	//流程预计为10秒
+			var mycontroller1 = 0;
+			var mycontroller2 = 0;
+			var mycontroller3= 0;
+			var mycontroller4 = 0;
+			function computerOp(){
+				if(turnover==0)return ; //还没到电脑回合,不往下执行
+				if(liucheng>30){	//超过电脑的时间,回到玩家回合
+					liucheng = 0;
+					cangetCard = 1;
+					turnover = 0;	
+					return ;
+				}
+				if(liucheng==0){
+					mycontroller1 = mycontroller2= mycontroller3 = mycontroller4 = 0;
+				}
+				liucheng++;
+				
+				if(cangetCard==1){		//电脑从卡组抽卡
+					var ran = Math.floor(Math.random()*card.length);
+					var obj = card[ran]	;	
+					var newobj = {name:obj.name,cost:obj.cost,attack:obj.attack,HP:obj.HP,font:obj.font,posx:700,posy:400,posi:1,sleeping:1};
+					computercard.push(newobj);
+					myshowinfoParam("对方抽了一张卡",20);
+					computerMaxCrystal+= computerMaxCrystal<10?1:0;  //法力水晶加1
+					computerNowCrystal=computerMaxCrystal;
+					computerCardNum++;	
+					cangetCard = 0;
+					
+				}
+				
+				if(liucheng>=0&&liucheng<6){
+					var cidx = -1;
+					for(var i=0;i<computercard.length;i++){
+						if(computercard[i].posi!=1)continue;
+						if(!(computercard[i].attack>=0))continue;
+						if(computercard[i].cost>computerNowCrystal)continue;
+						
+						cidx = i;
+
+					}
+					if(cidx!=-1){
+					
+						var goodpos = -1;
+						for(var j=0;j<7;j++){//找合适的位置放下怪兽
+							var flag = 1;	
+							for(var k=0;k<computercard.length;k++){
+								if(computercard[k].posi!=2)continue;
+							//	myshowinfoParam((computercard[k].posi==1)+","+pointinrec(j*100+50,150,computercard[k].posx,computercard[k].posy)+flag,30);
+								if(pointinrec(j*100+50,150,computercard[k].posx,computercard[k].posy)==0){
+									flag = 0;
+									break;
+								}
+							
+							}
+							if(flag==1&&mycontroller1==0){
+								mycontroller1++;
+								goodpos= j;
+								break;
+							}
+							
+						}
+						if(cidx!=-1&&goodpos!=-1){
+							computercard[cidx].posi = 2;//把这只怪兽召唤到场上
+							computercard[cidx].posx = goodpos*100+50;
+							computercard[cidx].posy  = 150;
+							computerNowCrystal -= computercard[cidx].cost;
+							computerCardNum--;
+							myshowinfoParam("对方召唤了一只"+computercard[cidx].name,20);
+							
+						}
+						
+					}
+					
+					
+					
+					
+				}else if(liucheng<12){
+					var cidx = -1;
+					for(var i=0;i<computercard.length;i++){
+						if(computercard[i].posi!=1)continue;
+						if(!(computercard[i].attack>=0))continue;
+						if(computercard[i].cost>computerNowCrystal)continue;
+						
+						cidx = i;
+
+					}
+					if(cidx!=-1){
+					
+						var goodpos = -1;
+						for(var j=0;j<7;j++){//找合适的位置放下怪兽
+							var flag = 1;	
+							for(var k=0;k<computercard.length;k++){
+								if(computercard[k].posi!=2)continue;
+							//	myshowinfoParam((computercard[k].posi==1)+","+pointinrec(j*100+50,150,computercard[k].posx,computercard[k].posy)+flag,30);
+								if(pointinrec(j*100+50,150,computercard[k].posx,computercard[k].posy)==0){
+									flag = 0;
+									break;
+								}
+							
+							}
+							if(flag==1&&mycontroller2==0){
+								mycontroller2++;
+								goodpos = j;
+								break;
+							}
+							
+						}
+						if(cidx!=-1&&goodpos!=-1){
+							computercard[cidx].posi = 2;//把这只怪兽召唤到场上
+							computercard[cidx].posx = goodpos*100+50;
+							computercard[cidx].posy  = 150;
+							computerNowCrystal -= computercard[cidx].cost;
+							computerCardNum--;
+							myshowinfoParam("对方召唤了一只"+computercard[cidx].name,20);
+							
+						}
+						
+					}
+					
+					
+					
+					
+				}else if(liucheng<18){	//准备释放法术
+					var it = -1;
+					for(var i=0;i<computercard.length;i++){
+						if(computercard[i].posi!=1)continue;
+						if(computercard[i].cost>computerNowCrystal)continue;
+						if(computercard[i].attack!='法术')continue;
+						it = i;
+						alert("!");
+						break;
+						
+					}
+					// 使用法术
+					if(it==-1)return;
+					var target = -1;
+					var temp = [];
+					for(var i=0;i<mycard.length;i++){
+						if(mycard[i].posi!=2)continue;
+						temp.push(i);
+					}
+					computerCardNum--;
+					//comp
+					computercard[it].posi = 3;
+					mygoal = Math.floor(temp.length*Math.random());
+					domagic(computercard,it,mycard,temp[mygoal]);
+					myshowinfoParam("电脑释放了法术"+computercard[it].name+temp[mygoal],30);
+					
+				}else if(liucheng<25){
+					//TODO 随从的攻击准备
+					//得到双方玩家场上卡片的信息				
+					var mychang = [];
+					for(var i=0;i<mycard[i].length;i++){
+						if(mycard[i].posi==2){
+							mychang.push(i);
+						}
+						
+					}
+					
+					for(var i=0;i<computercard.length;i++){
+					
+						if(computercard[i].posi==2){
+							
+							if(computercard[i].sleeping==1)continue;
+							
+							computercard[i].sleeping=1;//对于对方的每只怪兽，开始战斗
+							var ran = Math.floor(Math.random()*(mychang+1));
+							if(ran==mychang.length){
+							
+								myshowinfoParam("对方的"+computercard[i].name+"对您直接攻击",1000);
+								heroHP-=computercard[i].attack;
+							}else{
+								
+								myshowinfoParam("对方的"+computercard[i].name+"对您的"+mycard[mychang[ran]].name+"发起了攻击",1000);
+								mycard[mychang[ran]].HP -= computercard[i].attack;
+								computercard[i].HP -= mycard[mychang[ran]].attack;
+								if(mycard[mychang[ran]].HP<=0){
+									mycard[mychang[ran]].posi = 3;							
+								}
+								if(computercard[i].HP<=0){
+									computercard[i].posi=3;
+								}
+								
+								
+							}
+							
+							
+							
+							
+						}
+					}
+					
+					
+					
+					
+				//	alert(mychang[0].name);
+					
+					
+					
+					
+				}else if(liucheng<28){
+					for(var i=0;i<computercard.length;i++){
+						if(computercard[i].posi==2){
+							computercard[i].sleeping = 0;
+						}
+						
+					}
+					
+				}
+				
+			
+			
+				
+				
+				
+				
+				
+			}
+			/**
+			 * 关于火焰的特效
+			 */
+			function TXofFire(){
+				var mycan = document.getElementById("mycan");
+				var cxt = mycan.getContext("2d");
+				cxt.beginPath();
+				cxt.fillStyle = "red";
+				cxt.arc(100,100,10,0,2*Math.PI,true);
+				//TODO
+				cxt.closePath();
+				
+				
+			}
+			/**
+			 * 针对对方英雄发生的事件
+			 */
+			function asForComputerHero(idx){
+				
+				if(mycard[idx].name=="变形术")return -1;
+				if(mycard[idx].name=="暗杀")return -1;
+				if(mycard[idx].name=="喷射火焰"){
+					computerHP -= 6;
+					mycard[idx].posi = 3;
+					yourNowCrystal -= mycard[idx].cost;
+					return -100;
+				}
+	//			alert(idx);
+				computerHP -= mycard[idx].attack;
+				mycard[idx].sleeping = 1;
+				linexx = lineyy = -1;
+			//	alert(computerHP);
+				return -100;
+			}
+			
+			/**
+			 * 画手牌上图的巨大描述
+			 * 如果鼠标停留在自己的一张手牌上，那么就显示该牌的详细描述在左上角
+			 */
+			var showtime  = 10;
+			function drawDetailedDescription(){
+				var idx = -1;
+				for(var i=0;i<mycard.length;i++){
+					if(mycard[i].posi==1||mycard[i].posi==2){//在我方手牌或在场上
+						if(judgeRec(mycard[i].posx,mycard[i].posy,cardWidth,cardHeight)==1){
+							
+							idx = i;
+							
+							break;
+							
+						}
+					
+					}
+					
+					
+				}
+				
+				if(idx!=-1){
+					var mycan = document.getElementById("mycan");
+					var cxt = mycan.getContext("2d");
+					cxt.save();
+					cxt.beginPath();
+					cxt.fillStyle = "sandybrown";
+					cxt.rect(0,0,cardWidth*2,cardHeight*2);
+					cxt.fill();
+					cxt.fillStyle = "#FFF";
+					cxt.fillText(mycard[idx].name,20,30);
+					cxt.fillText("描述:",15,100);
+					var fonttemp = "";
+					var itfont  = mycard[idx].font;
+					
+					var yy=120;
+					for(var i=0;i<itfont.length;i++){
+						fonttemp += itfont[i];
+						if(i!=0&&i%10==0){
+							
+							cxt.fillText(fonttemp,20,yy);fonttemp="";
+							yy+=20;
+							
+						}
+					}
+					cxt.fillText(fonttemp,20,yy);
+					
+					
+					cxt.closePath();
+					cxt.restore();
+					
+				}
+				
+			}
+			/**
+			 * 展现信息给玩家看
+			 */
+			function privatemyshow(info){
+				var mycan = document.getElementById("mycan");
+				var cxt = mycan.getContext("2d");	
+				cxt.beginPath();
+				cxt.save();
+				cxt.fillStyle = "red";
+				if(allT<infoLastTime)cxt.fillText(info,300,100);
+				cxt.restore();
+				cxt.closePath();
+			}
+			function myshowinfoParam(inf,lasttime){
+				info = inf;
+				infoLastTime = allT+lasttime;
+				
+			}
+			
+			/**
+			 * 画三条线，把屏幕分成4个部分
+			 */
+			function drawThreeLine(){
+				
+				var mycan = document.getElementById("mycan");
+				var cxt = mycan.getContext("2d");	
+				cxt.beginPath();
+				cxt.moveTo(0,150);
+				cxt.lineTo(800,150);
+				cxt.stroke();
+				cxt.closePath();
+				
+				cxt.beginPath();
+				cxt.moveTo(0,300);
+				cxt.lineTo(650,300);
+				cxt.stroke();
+				cxt.closePath();
+				
+				cxt.beginPath();
+				cxt.moveTo(0,450);
+				cxt.lineTo(800,450);
+				cxt.stroke();
+				cxt.closePath();
+				
+			}
+			
+			/**
+			 * 画回合结束按钮
+			 */
+			function drawButton(){
+				var mycan = document.getElementById("mycan");
+				var cxt = mycan.getContext("2d");			
+				cxt.fontSize = 22;
+				cxt.save();
+				if(turnover==0){
+					cxt.beginPath();					
+					cxt.rect(665,292,133,61);
+					cxt.fillStyle = "yellow";	
+					cxt.fill();				
+					cxt.closePath();
+					cxt.fillStyle = "black";
+					cxt.fillText("回合结束",700,331);
+				}else{
+					cxt.beginPath();
+					cxt.rect(665,292,133,61);
+					cxt.fillStyle = "#cccccc";	
+					cxt.fill();
+					cxt.closePath();
+					cxt.fillStyle = "black";
+					cxt.fillText("对方回合",700,331);
+					/*
+					 * 让场上的怪解除睡觉
+					 */
+					for(var i=0;i<mycard.length;i++){
+						if(mycard[i].posi==2){
+							mycard[i].sleeping = 0;
+						}
+					}
+					
+				}
+				cxt.restore();
+					
+				
+					
+				
+			}
+			/**
+			 * 判断你按下的点是否在以x,y为起始点,w,h为宽高的矩形里面
+			 */
+			function judgeRec(x,y,w,h){
+				if(mymouseY<y)return 0;
+				if(mymouseY>y+h)return 0;
+				if(mymouseX<x)return 0;
+				if(mymouseX>x+w)return 0;
+				return 1;			
+			}
+			function myattack(cardidx,tar){
+				mycard[cardidx].HP -= computercard[tar].attack;
+				computercard[tar].HP -= mycard[cardidx].attack;
+				mycard[cardidx].sleeping = 1;
+				if(mycard[cardidx].HP<=0)mycard[cardidx].posi=3;
+				if(computercard[tar].HP<=0)computercard[tar].posi=3;
+				linexx = lineyy = -1;
+				
+				
+			}
+			
+			
+			var isfang = 1;
+			var cardidx = -1;
+			var tempx  = -1;
+			var tempy  = -1;
+			var itbegin =0 ;//看下该卡的起始位置 1手牌 2场上 3墓地
+			var lineyy =-1;//法术画线的x和y
+			var linexx =-1;
+			/**
+			 * 法术画线
+			 * 
+			 */
+			function drawMagicLine(){
+				if(lineyy==-1)return;
+				
+				var mycan = document.getElementById("mycan");
+				var cxt = mycan.getContext("2d");	
+				cxt.beginPath();
+				cxt.moveTo(linexx,lineyy);
+				cxt.lineTo(mymouseX,mymouseY);
+				cxt.stroke();
+				cxt.closePath();
+				
+				cxt.beginPath();
+				cxt.moveTo(linexx-5,lineyy-5);
+				cxt.lineTo(mymouseX-5,mymouseY-5);
+				cxt.stroke();
+				cxt.closePath();
+				
+			}
+			
+			/**
+			 * 拖动手牌中的卡片
+			 */
+
+			function tuo(){
+				
+				if(isfang==0&&cardidx!=-1){
+					tempx =tempx==-1? mycard[cardidx].posx:tempx;
+					tempy =tempy==-1? mycard[cardidx].posy:tempy;
+			//		temp = mycard[cardidx];
+					mycard[cardidx].posx = mymouseX-cardWidth/2;
+					mycard[cardidx].posy = mymouseY-cardHeight/2;
+					
+				}
+			}
+		//开始发动手牌法术的效果
+					/**0我 1他
+					 * cardidx 表示释放法术的我方索引
+					 * @param {Object} cardidx
+					 */
+					function domagic(whoattack,idx,goal,goalidx){
+						if(whoattack[idx].name=='喷射火焰'){
+
+							goal[goalidx].HP -= 6;
+							if(goal[goalidx].HP<=0)goal[goalidx].posi = 3;
+							
+						}else if(whoattack[idx].name=='暗杀'){
+							
+							goal[goalidx].posi = 3;
+							whoattack[idx].pos =3;
+						
+						}else if(whoattack[idx].name=='变形术'){
+							
+							goal[goalidx].attack = 0;
+							goal[goalidx].HP = 1;
+							goal[goalidx].name  ="可爱的羊";
+							goal[goalidx].cost  =  1;
+							goal[goalidx].sleeping = 1;
+						
+							
+						}
+						whoattack[idx].posi = 3;
+						if(whoattack==mycard){
+							yourNowCrystal-=whoattack[idx].cost;
+						}else{
+							computerNowCrystal -= whoattack[idx].cost;
+						}
+						
+						
+					}
+			
+			/*
+			 * 场上7个位置的横坐标
+			 * 
+			 */
+			var posInChangCanput = [1,1,1,1,1,1,1];
+			var posInChangX = [100,200,300,400,500,600,700];
+			var posInChangY = 320;
+			
+			var mygoal = -1;	
+			$(document).ready(function(){
+				
+					myinit();
+					/**
+					 * 让右键不要出菜单
+					 */
+					$("#mycan").bind("contextmenu",function(e){
+						return false;
+					 });
+					 /**
+					  * 让右键消除选择线
+					  */
+					 $('#mycan').mousedown(function(e){
+					 	
+						if(3 == e.which){
+							linexx = lineyy = -1;
+							
+						}
+					});
+					$("#mycan").click(function(){
+						/**
+						 * 判断是否点击回合结束按钮
+						 */
+						if(judgeRec(665,292,133,61)){
+						
+							turnover = 1;
+							cangetCard = 1;
+							return;
+						}
+	
+					});
+					/**
+					 * 鼠标按下事件
+					 */
+					
+					$("#mycan").mousedown(function(){
+						
+						/**
+						 * 判断是否到自己回合
+						 */
+						if(turnover==1){
+							myshowinfoParam("现在还没到您的回合",30);
+							return ;
+						}
+						/**
+						 * 看是否选中手中的牌
+						 */
+						for(var i=0;i<mycard.length;i++){
+							if(mycard[i].posi==1){				//看是否选中手中的卡
+								if(mycard[i].attack!="法术"&&judgeRec(mycard[i].posx,mycard[i].posy,cardWidth,cardHeight)){//若不为法术
+									itbegin = 1;
+									isfang = 0;
+									cardidx =i	;
+								
+								}else if(mycard[i].attack=="法术"&&judgeRec(mycard[i].posx,mycard[i].posy,cardWidth,cardHeight)){
+									tempx = Math.ceil(mycard[i].posx-50)/100*100+50;
+									tempy = 450;
+									cardidx = i;
+									itbegin = 1;//表示在手上
+									lineyy = lineyy==-1?mymouseY:lineyy;
+									linexx = linexx==-1?mymouseX:linexx;	
+								//	str+= "\nlineYY"+lineyy+"lineXX"+linexx;
+								}
+							}
+							
+						}
+						/**
+						 * 看是否选中场上的卡
+						 */
+						for(var i=0;i<mycard.length;i++){
+							if(mycard[i].posi==2){
+								
+								if(judgeRec(mycard[i].posx,mycard[i].posy,cardWidth,cardHeight)){
+									cardidx = i;
+									if(mycard[cardidx].sleeping==1){
+										myshowinfoParam("该随从还在休息",30);
+										cardidx = -1;
+										return ;
+									}else{
+										
+										itbegin = 2; //表示刚开始在场上
+										lineyy = lineyy==-1?mymouseY:lineyy;
+										linexx = linexx==-1?mymouseX:linexx;	
+									}
+									
+																	
+								}
+							}
+							
+						}
+						
+						
+						
+						
+						
+					})
+					
+					
+					/*
+					 * 鼠标放松事件
+					 * 
+					 */
+					
+					$("#mycan").mouseup(function(){
+					
+						
+						if(itbegin==1){	//如果刚开始是在手牌
+						//	if(cardidx==-1)return;
+						//	if(mymouseY<450){
+							
+								if(mycard[cardidx].cost>yourNowCrystal){	//如果费用不足
+									mygoal = -1;
+									lineyy = linexx =-1;
+									myshowinfoParam("您没有足够的法力值",30);
+									mycard[cardidx].posx = tempx;
+									mycard[cardidx].posy = tempy;
+									
+									
+						
+									tempx = tempy = -1;
+								
+								}else if(mycard[cardidx].attack!='法术'){		//如果这张卡不是法术，默认为怪兽
+									
+									tempx = tempy = -1;
+								
+									
+									yourNowCrystal -= mycard[cardidx].cost;
+									//挑选一个合适的位置，放置该随从
+									var canput = -1;
+									for(var i=0;i<7;i++){
+										var flag = 1;
+										for(var j=0;j<mycard.length;j++){
+											if(mycard[j].posi!=2)continue;
+											if(pointinrec(50+100*i,350,mycard[j].posx,mycard[j].posy)==0){
+												flag = 0;
+												break;
+											}
+											
+										}
+										if(flag==1){
+											canput = i;
+											break;
+										}
+										
+									}
+								
+
+									if(canput==-1){
+										myshowinfoParam("对不起，您的场已经满了",30);
+										
+										return ;
+									}else{
+										mycard[cardidx].posx = canput*100+50;
+										mycard[cardidx].posy = 300;
+										mycard[cardidx].posi =2; //放置在场上
+									}
+									
+								
+
+								}else if(mycard[cardidx].attack=='法术'){
+									/**
+									 * 释放法术 看该法术的目标
+									 */
+									for(var i=0;i<mycard.length;i++){	//看是否指定我方场上 0为指定自己
+										if(mycard[i].posi!=2)continue;
+										
+										if(judgeRec(mycard[i].posx,mycard[i].posy,cardWidth,cardHeight)){
+											mygoal = i;
+											domagic(mycard,cardidx,mycard,mygoal);
+									
+											break;
+										}
+										
+									}
+									for(var i=0;i<computercard.length;i++){	//看是否指定对方场上 1为指定对方
+										if(computercard[i].posi!=2)continue;
+										
+										if(judgeRec(computercard[i].posx,computercard[i].posy,cardWidth,cardHeight)){
+											mygoal = i;
+									//		domagic(0,mycard[cardidx].name,"1",mygoal);
+											domagic(mycard,cardidx,computercard,mygoal);
+											break;
+										}
+										
+									}
+							//		如果指定的是对方英雄
+									if(judgeRec(computerHeadx,computerHeady,cardWidth,cardHeight)){
+								//		alert(mycard[cardidx].name);
+										mygoal = asForComputerHero(cardidx);
+										
+									}
+									
+									if(mygoal==-1){
+										lineyy = linexx =-1;
+										myshowinfoParam("这不是一个有效的目标",30)
+									}
+									
+									linexx = -1;
+									lineyy = -1;
+									
+								}
+								
+						//		alert(cardidx);
+								
+							//}
+						}else if(itbegin==2){	//说明刚刚开始在场上
+							
+							var tar = -1;
+							for(var i=0;i<computercard.length;i++){
+								//alert();
+								if(computercard[i].posi==2&&pointinrec(mymouseX,mymouseY,computercard[i].posx,computercard[i].posy)==0){
+									tar = i;
+									break;
+									
+								}
+
+							}
+						//		如果指定的是对方英雄
+							if(judgeRec(computerHeadx,computerHeady,cardWidth,cardHeight)){
+				
+								tar = asForComputerHero(cardidx);
+								
+							}
+							if(tar==-1){
+								myshowinfoParam("这不是一个有效的目标",30);
+								
+								
+							}else if(tar==-100){
+								
+							}else{
+								myattack(cardidx,tar);
+								lineyy = -1;
+							}
+							
+							
+						}
+						isfang = 1;
+						cardidx = -1;
+						itbegin = -1;
+					});
+					
+					/**
+					 * 获得鼠标的x,y,并且可以把其放入变量中
+					 */
+					$("#mycan").mousemove(function(){
+						mymouseX = window.event.clientX;
+						mymouseY = window.event.clientY;
+						
+					});
+					
+					setInterval(drawBase,100);
+			});
+				/**
+			 * 显示信息用
+			 */
+			function show(){
+				str = "isfang="+isfang;
+				str  += ",cardidx="+cardidx;
+				str += ",itbegin="+itbegin;
+				str +=	",mymouseY="+mymouseY;
+				str += ",tempx="+tempx;
+				str += ",tempy="+tempy;
+				str += ",allT="+allT;
+				str += ",lineXX"+linexx;
+				str += ",lineyy"+lineyy;
+				str += ",mymousexx"+mymouseX;
+				str += ",mymouseY"+mymouseY;
+				
+				$(".test").html(str);
+				
+			}
+			
+		</script>
+		
+	</head>
+	<body>
+		<div >
+			<canvas id="mycan" width="800" height="600" style="border:1px solid; " </canvas>
+			<!--<div class="xx" style="width:400px ;height:300px ;border:solid 1px; margin-left:400px;float:right;margin-left:600px;" ></div>-->
+		</div>
+		<div class="test" style="width:200px ;height:100px ;border:solid 1px; " ></div>
+		<button onclick="ojbk()">点击</button>
+	</body>
+</html>
