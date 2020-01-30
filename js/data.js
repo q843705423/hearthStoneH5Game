@@ -25,8 +25,8 @@ var cangetCard = 1; //判断是否可以抽卡
  * 人物的属性
  */
 var heroHP = 30;
-var yourMaxCrystal = 3;		//你的最大法力水晶
-var yourNowCrystal = 3; 	//你现在的法力水晶
+var yourMaxCrystal = 9;		//你的最大法力水晶
+var yourNowCrystal = 9; 	//你现在的法力水晶
 
 
 var computerHP = 30;

@@ -98,7 +98,13 @@ function doComputer(context, obj) {
             run: obj.run,
             music: obj.music
         };
-        computercard.push(newobj);
+        tx.push({
+            name:'otherGetCard',
+            fun:otherGetCard,
+            beginT:allT,
+            lastT:20,
+            card:newobj,
+        })
         myshowinfoParam("对方抽了一张卡", 20);
 
         cangetCard = 0;
@@ -108,8 +114,8 @@ function doComputer(context, obj) {
         tx.push({
             funname: "notMove",
             fun: notMove,
-            img:computercard[obj.cardidx].img,
-            beginT:allT,
+            img: computercard[obj.cardidx].img,
+            beginT: allT,
         })
         // showInRightTop(context, computercard[obj.cardidx].img);
 
@@ -188,6 +194,12 @@ function doComputer(context, obj) {
 
     } else if (obj.thing === "domagic") {//放法术
 
+        tx.push({
+            funname: "notMove",
+            fun: notMove,
+            img: computercard[obj.cardidx].img,
+            beginT: allT,
+        })
 
         if (computercard[obj.cardidx].point === POINTNO) {//若为无指向性法术
             console.log(obj.cardidx);
@@ -195,20 +207,19 @@ function doComputer(context, obj) {
             myshowinfoParam("电脑使用了法术" + computercard[obj.cardidx].name, 20);
         } else {//指向性法术，随机指定目标释放,但要根据卡牌的好坏
 
-            var name = computercard[obj.cardidx].name;
-            var goodCard = ["真言盾"];//增益卡列表
-            var isgood = 0;
-            for (let i = 0; i < goodCard.length; i++) {
-                if (name === goodCard[i]) isgood = 1;
-            }
+            let name = computercard[obj.cardidx].name;
+            let goodCard = ["真言盾"];//增益卡列表
+            let isgood = goodCard.some(card => card === name);
+            console.log("isgood");
+            console.log(isgood);
             if (isgood) {
-                var myidx = chooseIt(computercard);
+                let myidx = chooseIt(computercard);
                 domagic(computercard, obj.cardidx, computercard, myidx);
                 myshowinfoParam("电脑对自己的" + computercard[myidx].name + "使用了法术" + computercard[obj.cardidx].name, 18);
             } else {
                 var itidx = -1;
                 for (var i = 0; i < mycard.length; i++) {
-                    if (mycard[i].attack >= 3 && mycard[i].HP >= 3) {
+                    if (mycard[i].attack >= 3 && mycard[i].HP >= 3 && mycard[i].pos === 2) {
                         itidx = i;
                         break;
                     }

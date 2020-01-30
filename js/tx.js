@@ -9,29 +9,32 @@
 function drawTX() {
 
     for (var i = 0; i < tx.length; i++) {
-        if (tx[i].funname === 'move') {
-            tx[i].fun(tx[i])
-        }
-        if (tx[i].funname == "attackTX") {
-            tx[i].fun(tx[i]);
-        }
-
         if (allT - tx[i].beginT > tx[i].lastT) {
             continue;
         }
-        if (tx[i].funname == "blackTX") {
-            tx[i].fun(tx[i].beginT, tx[i].lastT);
-        }
+        tx[i].fun(tx[i])
+        /*
+                if (tx[i].funname === 'move') {
+                    tx[i].fun(tx[i])
+                }
+                if (tx[i].funname == "attackTX") {
+                    tx[i].fun(tx[i]);
+                }
 
-        if (tx[i].funname == "fireTX") {
-            tx[i].fun(tx[i]);
-        }
-        if (tx[i].funname == "killTX") {
-            tx[i].fun(tx[i]);
-        }
-        if(tx[i].funname==='notMove'){
-            tx[i].fun(tx[i])
-        }
+                if (tx[i].funname == "blackTX") {
+                    tx[i].fun(tx[i].beginT, tx[i].lastT);
+                }
+
+                if (tx[i].funname == "fireTX") {
+                    tx[i].fun(tx[i]);
+                }
+                if (tx[i].funname == "killTX") {
+                    tx[i].fun(tx[i]);
+                }
+                if(tx[i].funname==='notMove'){
+                    tx[i].fun(tx[i])
+                }
+        */
 
     }
 
@@ -162,7 +165,7 @@ function attackTX(obj) {
     }
 //				myshowinfoParam(who,10);
     if (t < lastT / 2) {    //前半部分
-        if(obj.playMusic === undefined){
+        if (obj.playMusic === undefined) {
 
             playMusic("music/打的声音.m4a")
             obj.playMusic = 1;
@@ -187,6 +190,24 @@ function attackTX(obj) {
             computercard[myidx].posx = endX + (beginX - endX) * (t - lastT / 2) / (lastT / 2);
             computercard[myidx].posy = endY + (beginY - endY) * (t - lastT / 2) / (lastT / 2);
         }
+        if (t === lastT) {
+            if (who == "mycard") {
+                if (mycard[myidx].HP <= 0) {
+                    mycard[myidx].posi = 3;
+                }
+                if (goal != undefined && computercard[goal].HP <= 0) {
+                    computercard[goal].posi = 3;
+                }
+
+            } else if (who == "computercard") {
+                if (computercard[myidx].HP <= 0) {
+                    computercard[myidx].posi = 3;
+                }
+                if (goal != undefined && mycard[goal].HP <= 0) {
+                    mycard[goal].posi = 3;
+                }
+            }
+        }
 
     }
 
@@ -196,7 +217,7 @@ function attackTX(obj) {
 /**
  * 扭曲虚空特效
  */
-function blackTX(beginT, lastT) {
+function blackTX(obj) {
 
 
     var mycan = document.getElementById("mycan");
@@ -204,14 +225,14 @@ function blackTX(beginT, lastT) {
     cxt.beginPath();
 
     cxt.fillStyle = "black";
-    cxt.arc(400, 300, (allT - beginT) * 33, 0, 2 * Math.PI, true);
+    cxt.arc(400, 300, (allT - obj.beginT) * 33, 0, 2 * Math.PI, true);
     cxt.fill();
     cxt.closePath();
 }
 
 function notMove(obj) {
 
-    if(allT - obj.beginT > 20){
+    if (allT - obj.beginT > 20) {
         return;
     }
     var mycan = document.getElementById("mycan");
@@ -220,11 +241,25 @@ function notMove(obj) {
     cxt.beginPath();
     cxt.save();
     let img = new Image();
-    console.log(obj);
-    console.log(obj.img);
     img.src = obj.img;
     cxt.drawImage(img, 500, 0, 200, 300);
     cxt.restore();
     cxt.closePath();
 
+}
+
+function otherGetCard(obj) {
+    let dt = allT - obj.beginT
+
+    let len = computercard.reduce((sum, val) => sum = sum + val.posi === 1 ? 1 : 1)
+    // let len = computercard.length;
+
+    let dv_x = (700 - (15 * len + 300)) / 20;
+    let dv_y = (200 - (-20)) / 20;
+
+    if (dt === 20) {
+        computercard.push(obj.card);
+
+    }
+    drawImg("img/黄金挑战.png", 700 - dv_x * dt, 200 - dt * dv_y, 45, 60);
 }

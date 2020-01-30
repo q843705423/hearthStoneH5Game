@@ -63,7 +63,7 @@ function getCardIdxByName(name) {
  */
 
 function myinit() {
-    let index = getCardIdxByName("真言盾");
+    let index = getCardIdxByName("扭曲虚空");
     for (var i = 0; i < 3; i++) {
         var ran = Math.floor(Math.random() * card.length);
         if(i===0){
@@ -122,12 +122,10 @@ function myinit() {
 function gameisover() {
     if (heroHP <= 0) {
         heroHP = 0;
-        alert("您输了这场比赛，点击确认重新开始");
         window.location.href = "index.html";
     }
     if (computerHP <= 0) {
         computerHP = 0;
-        alert("恭喜您获得胜利，点击确认重新开始");
         window.location.href = "index.html";
     }
 
@@ -979,7 +977,6 @@ function tuo() {
  */
 function domagic(whoAttack, idx, goal, goalIdx) {
 
-    console.log(whoAttack[idx].music)
     if (whoAttack[idx].music) {
         playMusic(whoAttack[idx].music)
     }
