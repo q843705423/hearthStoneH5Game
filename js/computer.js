@@ -22,25 +22,25 @@ function computerCanDoing() {
         return obj;
     }
     //能释放法术
-    for (let i = 0; i < computercard.length; i++) {
+    for (let i = 0; i < computer.card.length; i++) {
         if (useMagicNoProblem(i) === false) {//判断逻辑上是否能用此卡
             continue;
         }
-        if (computercard[i].choosed !== 1 && computercard[i].posi == 1 && computercard[i].cost <= computerNowCrystal && computercard[i].attack == "法术") {
+        if (computer.card[i].choosed !== 1 && computer.card[i].posi == 1 && computer.card[i].cost <= computer.nowCrystal && computer.card[i].attack == "法术") {
             obj.state = 1;
             obj.cardidx = i;
 
             obj.thing = "domagic";
-            computercard[i].choosed = 1;		//保证就算不用也不会重复选，进入死循环
+            computer.card[i].choosed = 1;		//保证就算不用也不会重复选，进入死循环
             return obj;
 
         }
 
     }
     //电脑能攻击
-    for (var i = 0; i < computercard.length; i++) {
+    for (var i = 0; i < computer.card.length; i++) {
 
-        if (computercard[i].posi === 2 && computercard[i].sleeping === 0) {
+        if (computer.card[i].posi === 2 && computer.card[i].sleeping === 0) {
             obj.state = 1;
             obj.cardidx = i;
             obj.thing = "attack";
@@ -52,9 +52,9 @@ function computerCanDoing() {
     }
 
     //电脑能召唤随从
-    for (var i = 0; i < computercard.length; i++) {
+    for (var i = 0; i < computer.card.length; i++) {
 
-        if (computercard[i].posi === 1 && computercard[i].cost <= computerNowCrystal && computercard[i].attack !== '法术' && getChangPosForcomputer() !== -1) {
+        if (computer.card[i].posi === 1 && computer.card[i].cost <= computer.nowCrystal && computer.card[i].attack !== '法术' && getChangPosForcomputer() !== -1) {
             obj.state = 1;
             obj.cardidx = i;
             obj.thing = "gotowar";
@@ -76,9 +76,9 @@ function computerCanDoing() {
 function doComputer(context, obj) {
     console.log(obj.thing);
     if (obj.thing === "getCrystal") {//获得法力水晶
-        computerMaxCrystal += computerMaxCrystal < 10 ? 1 : 0;  //法力水晶加1
-        computerNowCrystal = computerMaxCrystal;
-        computerCardNum++;
+        computer.maxCrystal += computer.maxCrystal < 10 ? 1 : 0;  //法力水晶加1
+        computer.nowCrystal = computer.maxCrystal;
+        computer.cardNum++;
         cangetCrystal = 0;
     } else if (obj.thing === "getCard") {	//电脑抽卡
         var ran = Math.floor(Math.random() * card.length);
@@ -101,7 +101,7 @@ function doComputer(context, obj) {
         tx.push({
             name:'otherGetCard',
             fun:otherGetCard,
-            beginT:allT,
+            beginT:global.T,
             lastT:20,
             card:newobj,
         })
@@ -114,21 +114,21 @@ function doComputer(context, obj) {
         tx.push({
             funname: "notMove",
             fun: notMove,
-            img: computercard[obj.cardidx].img,
-            beginT: allT,
+            img: computer.card[obj.cardidx].img,
+            beginT: global.T,
         })
-        // showInRightTop(context, computercard[obj.cardidx].img);
+        // showInRightTop(context, computer.card[obj.cardidx].img);
 
         goodpos = getChangPosForcomputer();
         if (goodpos !== -1) {
-            computercard[obj.cardidx].posi = 2;//把这只怪兽召唤到场上
-            computercard[obj.cardidx].posx = calcomputerChangPosX(goodpos);
-            computercard[obj.cardidx].posy = calcomputerChangPosY(goodpos);
-            computercard[obj.cardidx].post = goodpos;
-            doNOPointFunction(computercard, obj.cardidx);
-            computerNowCrystal -= computercard[obj.cardidx].cost;
+            computer.card[obj.cardidx].posi = 2;//把这只怪兽召唤到场上
+            computer.card[obj.cardidx].posx = calcomputerChangPosX(goodpos);
+            computer.card[obj.cardidx].posy = calcomputerChangPosY(goodpos);
+            computer.card[obj.cardidx].post = goodpos;
+            doNOPointFunction(computer.card, obj.cardidx);
+            computer.nowCrystal -= computer.card[obj.cardidx].cost;
 
-            myshowinfoParam("对方召唤了一只" + computercard[obj.cardidx].name, 20);
+            myshowinfoParam("对方召唤了一只" + computer.card[obj.cardidx].name, 20);
 
         }
 
@@ -140,27 +140,27 @@ function doComputer(context, obj) {
 
         if (attackHero === true || attackHero === 1) {
 
-            myshowinfoParam(computercard[obj.cardidx].name + "对您发起了攻击", 18);
+            myshowinfoParam(computer.card[obj.cardidx].name + "对您发起了攻击", 18);
             tx.push(
                 {
                     funname: "attackTX",
                     fun: attackTX,
-                    who: "computercard",
+                    who: "computer.card",
                     myidx: obj.cardidx,
-                    beginX: computercard[obj.cardidx].posx,
-                    beginY: computercard[obj.cardidx].posy,
+                    beginX: computer.card[obj.cardidx].posx,
+                    beginY: computer.card[obj.cardidx].posy,
                     endX: 450,
                     endY: 450,
-                    beginT: allT,
+                    beginT: global.T,
                     lastT: 15
                 });
-            heroHP -= computercard[obj.cardidx].attack;
-            computercard[obj.cardidx].sleeping = 1;
+            user.HP -= computer.card[obj.cardidx].attack;
+            computer.card[obj.cardidx].sleeping = 1;
 
         } else {
             var mychang = [];
-            for (let i = 0; i < mycard.length; i++) {
-                if (mycard[i].posi === 2) {
+            for (let i = 0; i < user.card.length; i++) {
+                if (user.card[i].posi === 2) {
                     mychang.push(i);
                 }
             }
@@ -168,26 +168,26 @@ function doComputer(context, obj) {
             if (mychang.length === 0) return;
 
             cnt = mychang[cnt];
-            myshowinfoParam(computercard[obj.cardidx].name + "对" + mycard[cnt].name + "发起攻击", 20);
+            myshowinfoParam(computer.card[obj.cardidx].name + "对" + user.card[cnt].name + "发起攻击", 20);
             tx.push(
                 {
                     funname: "attackTX",
                     fun: attackTX,
-                    who: "computercard",
+                    who: "computer.card",
                     myidx: obj.cardidx,
-                    beginX: computercard[obj.cardidx].posx,
-                    beginY: computercard[obj.cardidx].posy,
-                    endX: mycard[cnt].posx,
-                    endY: mycard[cnt].posy,
-                    beginT: allT,
+                    beginX: computer.card[obj.cardidx].posx,
+                    beginY: computer.card[obj.cardidx].posy,
+                    endX: user.card[cnt].posx,
+                    endY: user.card[cnt].posy,
+                    beginT: global.T,
                     goal: cnt,
                     lastT: 15
                 });
-            mycard[cnt].HP -= computercard[obj.cardidx].attack;
-            computercard[obj.cardidx].HP -= mycard[cnt].attack;
-//						if(mycard[cnt].HP<=0)mycard[cnt].posi= 3;
-//						if(computercard[obj.cardidx].HP<=0)computercard[obj.cardidx].posi = 3;
-            computercard[obj.cardidx].sleeping = 1;
+            user.card[cnt].HP -= computer.card[obj.cardidx].attack;
+            computer.card[obj.cardidx].HP -= user.card[cnt].attack;
+//						if(user.card[cnt].HP<=0)user.card[cnt].posi= 3;
+//						if(computer.card[obj.cardidx].HP<=0)computer.card[obj.cardidx].posi = 3;
+            computer.card[obj.cardidx].sleeping = 1;
 
         }
 
@@ -197,36 +197,36 @@ function doComputer(context, obj) {
         tx.push({
             funname: "notMove",
             fun: notMove,
-            img: computercard[obj.cardidx].img,
-            beginT: allT,
+            img: computer.card[obj.cardidx].img,
+            beginT: global.T,
         })
 
-        if (computercard[obj.cardidx].point === POINTNO) {//若为无指向性法术
+        if (computer.card[obj.cardidx].point === POINTNO) {//若为无指向性法术
             console.log(obj.cardidx);
-            doNOPointFunction(computercard, obj.cardidx);
-            myshowinfoParam("电脑使用了法术" + computercard[obj.cardidx].name, 20);
+            doNOPointFunction(computer.card, obj.cardidx);
+            myshowinfoParam("电脑使用了法术" + computer.card[obj.cardidx].name, 20);
         } else {//指向性法术，随机指定目标释放,但要根据卡牌的好坏
 
-            let name = computercard[obj.cardidx].name;
+            let name = computer.card[obj.cardidx].name;
             let goodCard = ["真言盾"];//增益卡列表
             let isgood = goodCard.some(card => card === name);
             console.log("isgood");
             console.log(isgood);
             if (isgood) {
-                let myidx = chooseIt(computercard);
-                domagic(computercard, obj.cardidx, computercard, myidx);
-                myshowinfoParam("电脑对自己的" + computercard[myidx].name + "使用了法术" + computercard[obj.cardidx].name, 18);
+                let myidx = chooseIt(computer.card);
+                domagic(computer.card, obj.cardidx, computer.card, myidx);
+                myshowinfoParam("电脑对自己的" + computer.card[myidx].name + "使用了法术" + computer.card[obj.cardidx].name, 18);
             } else {
                 var itidx = -1;
-                for (var i = 0; i < mycard.length; i++) {
-                    if (mycard[i].attack >= 3 && mycard[i].HP >= 3 && mycard[i].pos === 2) {
+                for (var i = 0; i < user.card.length; i++) {
+                    if (user.card[i].attack >= 3 && user.card[i].HP >= 3 && user.card[i].pos === 2) {
                         itidx = i;
                         break;
                     }
                 }
-                if (itidx === -1) itidx = chooseIt(computercard);
-                myshowinfoParam("电脑对您的" + mycard[itidx].name + "使用了法术" + computercard[obj.cardidx].name, 18);
-                domagic(computercard, obj.cardidx, mycard, itidx);
+                if (itidx === -1) itidx = chooseIt(computer.card);
+                myshowinfoParam("电脑对您的" + user.card[itidx].name + "使用了法术" + computer.card[obj.cardidx].name, 18);
+                domagic(computer.card, obj.cardidx, user.card, itidx);
             }
 
         }
@@ -241,10 +241,10 @@ function doComputer(context, obj) {
  */
 function useMagicNoProblem(cardidx) {
 
-    if (computercard[cardidx].name === "真言盾") {//看自己场上是否有随从
+    if (computer.card[cardidx].name === "真言盾") {//看自己场上是否有随从
         let ok = 0;
-        for (var i = 0; i < computercard.length; i++) {
-            if (computercard[i].posi === 2) return true;
+        for (var i = 0; i < computer.card.length; i++) {
+            if (computer.card[i].posi === 2) return true;
         }
         return false;
 
@@ -252,25 +252,25 @@ function useMagicNoProblem(cardidx) {
     }
     var goodforcomputer = ["火球术", "刺杀", "变形术"];//对方场上有攻击和血量在3以上的随从时发动
     for (var j = 0; j < goodforcomputer.length; j++) {
-        if (computercard[cardidx].name === goodforcomputer[j]) {
-            for (var k = 0; k < mycard.length; k++) {
-                if (mycard[k].posi === 2 && mycard[k].attack >= 3 && mycard[k].HP >= 3) return true;//隐藏的bug
+        if (computer.card[cardidx].name === goodforcomputer[j]) {
+            for (var k = 0; k < user.card.length; k++) {
+                if (user.card[k].posi === 2 && user.card[k].attack >= 3 && user.card[k].HP >= 3) return true;//隐藏的bug
             }
             return false;
         }
 
     }
-    if (computercard[cardidx].name === "扭曲虚空") {
+    if (computer.card[cardidx].name === "扭曲虚空") {
         var cgoal = 0;
-        for (let i = 0; i < computercard.length; i++) {
-            if (computercard[i].posi === 2) {
-                cgoal += computercard[i].attack + computercard[i].HP;
+        for (let i = 0; i < computer.card.length; i++) {
+            if (computer.card[i].posi === 2) {
+                cgoal += computer.card[i].attack + computer.card[i].HP;
             }
         }
         var mygoal = 0;
-        for (let i = 0; i < mycard.length; i++) {
-            if (mycard[i].posi === 2) {
-                mygoal += mycard[i].attack + mycard[i].HP;
+        for (let i = 0; i < user.card.length; i++) {
+            if (user.card[i].posi === 2) {
+                mygoal += user.card[i].attack + user.card[i].HP;
             }
         }
         if (cgoal >= mygoal - 10) return false;

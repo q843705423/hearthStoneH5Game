@@ -17,7 +17,7 @@ function cardObj(name, cost, attack, HP, font, posx, posy, posi, sleeping) {
  * @param {Object} post
  */
 function calcomputerChangPosX(post) {
-    return post * (cardWidth + 3) + 90;
+    return post * (constant.card.width + 3) + 90;
 }
 
 function calcomputerChangPosY(post) {
@@ -25,7 +25,7 @@ function calcomputerChangPosY(post) {
 }
 
 function calMyChangPosX(post) {
-    return post * (cardWidth + 3) + 90;
+    return post * (constant.card.width + 3) + 90;
 }
 
 function calMyChangPosY(post) {
@@ -33,7 +33,7 @@ function calMyChangPosY(post) {
 }
 
 function calMyHandPosX(post) {
-    return post * (cardWidth + 3);
+    return post * (constant.card.width + 3);
 }
 
 function calMyHandPosY(post) {
@@ -42,7 +42,7 @@ function calMyHandPosY(post) {
 
 /**
  *我方拥有卡片
- * 其中posx 表示卡片的位置,形式为100+i*(cardWidth+10)
+ * 其中posx 表示卡片的位置,形式为100+i*(constant.card.width+10)
  * posy 为450  两个是物理位置
  * posi 逻辑位置  1.表示手上   2.表示在场上,3表示在墓地
  *
@@ -59,43 +59,67 @@ function getCardIdxByName(name) {
 }
 
 /**
+ * 指定索引，从所有牌库中生成一张卡片
+ * @param index
+ * @param posx
+ * @param posy
+ * @param post
+ * @returns {{posx: *, posy: *, posi: number, cost: number, post: *, attack: (number|string), name: (string), HP: number, type: *, sleeping: number, point: number, font: (string)}}
+ */
+function getNonRandomCardAcquisition(index, posx, posy, post) {
+    let obj = card[index]
+    return {
+        name: obj.name,
+        cost: obj.cost,
+        attack: obj.attack,
+        HP: obj.HP,
+        font: obj.font,
+        posx: posx,//卡牌物理横坐标
+        posy: posy,//卡牌物理纵坐标
+        post: post,//卡牌在场上的逻辑横坐标
+        posi: 1,
+        sleeping: 1,
+        point: obj.point,
+        type: obj.type,
+        img: obj.img,
+        play: obj.play,
+    };
+
+}
+
+/**
+ * 随机生成卡片
+ * @param posx
+ * @param posy
+ * @param post
+ * @returns {{posx: *, posy: *, posi: number, cost: number, post: *, attack: (number|string), name: string, HP: number, type: *, sleeping: number, point: number, font: string}}
+ */
+function getCard(posx = 50 + 100 * i, posy = 450, post = -1) {
+    let ran = Math.floor(Math.random() * card.length);
+    return getNonRandomCardAcquisition(ran, posx, posy, post);
+}
+
+/**
  * 给我和电脑进行初始化的方法
  */
 
 function myinit() {
-    let index = getCardIdxByName("扭曲虚空");
+    let index = getCardIdxByName("火球术");
     for (var i = 0; i < 3; i++) {
         var ran = Math.floor(Math.random() * card.length);
-        if(i===0){
+        if (i === 0) {
             ran = index;
         }
         var obj = card[ran];
 
-        mycard.push(
-            {
-                post: i,
-                img: obj.img,
-                name: obj.name,
-                cost: obj.cost,
-                attack: obj.attack,
-                HP: obj.HP,
-                font: obj.font,
-                post: i,
-                posx: (cardWidth + 3) * (i),
-                posy: calMyHandPosY(),
-                posi: 1,
-                sleeping: 1,
-                point: obj.point,
-                run: obj.run,
-                music: obj.music
-            });
-        //cardObj()
+        let nonRandomCardAcquisition = getNonRandomCardAcquisition(ran, (constant.card.width + 3) * (i), calMyHandPosY(), i);
+        user.card.push(nonRandomCardAcquisition);
     }
     //给电脑
     for (var i = 0; i < 3; i++) {
         var ran = Math.floor(Math.random() * card.length);
         var obj = card[ran];
-        computercard.push(
+        computer.card.push(
             {
                 img: obj.img,
                 name: obj.name,
@@ -120,12 +144,12 @@ function myinit() {
  * 游戏结束的判定
  */
 function gameisover() {
-    if (heroHP <= 0) {
-        heroHP = 0;
+    if (user.HP <= 0) {
+        user.HP = 0;
         window.location.href = "index.html";
     }
-    if (computerHP <= 0) {
-        computerHP = 0;
+    if (computer.HP <= 0) {
+        computer.HP = 0;
         window.location.href = "index.html";
     }
 
@@ -142,8 +166,6 @@ function drawComputer() {
     var cxt = mycan.getContext("2d");
     cxt.save();
     cxt.beginPath();
-    //				cxt.rect(computerHeadx,computerHeady,80,120);
-    //				cxt.fillText("凯撒大帝",120,60);
 
     cxt.stroke();
     cxt.restore();
@@ -154,16 +176,15 @@ function drawComputer() {
 //画电脑有多少张牌
 function drawComputerCardBack() {
     var cnt = 0;
-    for (var i = 0; i < computercard.length; i++) {
-        if (computercard[i].posi == 1) {
+    for (let i = 0; i < computer.card.length; i++) {
+        if (computer.card[i].posi == 1) {
             cnt++;
         }
 
     }
 //		console.log("cnt="+cnt);
-    for (var i = 0; i < cnt; i++) {
+    for (let i = 0; i < cnt; i++) {
         drawImg("img/黄金挑战.png", 15 * i + 300, -20, 45, 60);
-
     }
 }
 
@@ -198,7 +219,7 @@ function moveCardAll() {
  */
 function moveCard(idx, beginT, last, beginposx, beginposy, endposx, endposy) {
 
-    if (allT >= beginT + last) {
+    if (global.T >= beginT + last) {
         return 0;
 
     }
@@ -206,8 +227,8 @@ function moveCard(idx, beginT, last, beginposx, beginposy, endposx, endposy) {
     var dx = (endposx - beginposx) / last;
     var dy = (endposy - beginposy) / last;
 
-    mycard[idx].posx += dx;
-    mycard[idx].posy += dy;
+    user.card[idx].posx += dx;
+    user.card[idx].posy += dy;
     return 1;
 
 }
@@ -219,7 +240,7 @@ function showHP(context) {
     context.arc(438, 144, 15, 0, 2 * Math.PI, true);
     context.fill();
     context.fillStyle = "white";
-    context.fillText(computerHP, 434, 148);
+    context.fillText(computer.HP, 434, 148);
     context.restore();
     context.closePath();
     context.save();
@@ -229,7 +250,7 @@ function showHP(context) {
     context.fill();
     context.fillStyle = "white";
 
-    context.fillText(heroHP, 435, 504);
+    context.fillText(user.HP, 435, 504);
     context.restore();
     context.closePath();
 
@@ -269,14 +290,13 @@ function drawBase() {
             drawComputer();
 
         } else {
-//						console.log("turnover="+turnover);
             drawComputer();
             drawMycard(context);
 
         }
         privatemyshow(info);
         drawDetailedDescription(context);
-        allT += 1;
+        global.T += 1;
         gameisover();
         drawTX();
 
@@ -289,19 +309,19 @@ function drawBase() {
  * 画法力水晶
  */
 function drawCrystal(context) {
-    computerCardNum = 0;
-    for (let i = 0; i < computercard.length; i++) {
-        computerCardNum += computercard[i].posi === 1 ? 1 : 0;
+    computer.cardNum = 0;
+    for (let i = 0; i < computer.card.length; i++) {
+        computer.cardNum += computer.card[i].posi === 1 ? 1 : 0;
     }
     context.save();
     context.beginPath();
     context.fillStyle = "blue";
     context.rect(523, 20, 45, 30);
     context.fillStyle = "white";
-    context.fillText(+computerNowCrystal + "/" + computerMaxCrystal, 540, 42);
+    context.fillText(+computer.nowCrystal + "/" + computer.maxCrystal, 540, 42);
     context.closePath();
     //画您的最大个法力水晶 灰底
-    for (let i = 0; i < yourMaxCrystal; i++) {
+    for (let i = 0; i < user.maxCrystal; i++) {
         context.beginPath();
 
         context.fillStyle = "#ccc";
@@ -313,7 +333,7 @@ function drawCrystal(context) {
 
     }
 
-    for (let i = 0; i < yourNowCrystal; i++) {	//画您拥有的法力水晶 蓝色
+    for (let i = 0; i < user.nowCrystal; i++) {	//画您拥有的法力水晶 蓝色
         context.beginPath();
 
         context.arc(600 + i * 18, 555, 8, 0, 2 * Math.PI, true);
@@ -328,7 +348,7 @@ function drawCrystal(context) {
     context.rect(540, 545, 50, 20);
 //				cxt.fill();
     context.fillStyle = "white";
-    context.fillText(yourNowCrystal + "/" + yourMaxCrystal, 555, 560);
+    context.fillText(user.nowCrystal + "/" + user.maxCrystal, 555, 560);
     context.restore();
     context.closePath();
     context.restore();
@@ -339,11 +359,11 @@ function drawCrystal(context) {
  */
 function drawComputerCard(context) {
 
-    for (var i = 0; i < computercard.length; i++) {
-        if (computercard[i].posi !== 2) {
+    for (var i = 0; i < computer.card.length; i++) {
+        if (computer.card[i].posi !== 2) {
             continue;
         }
-        drawOneCard(context, computercard[i], computercard[i].posx, computercard[i].posy);
+        drawOneCard(context, computer.card[i], computer.card[i].posx, computer.card[i].posy);
 
     }
 
@@ -355,14 +375,14 @@ function drawComputerCard(context) {
  * 画我方拥有的卡片
  */
 function drawMycard(context) {
-    for (let i = 0; i < mycard.length; i++) {
-        if (mycard[i].posi === 1) {			//说明该卡在手牌
+    for (let i = 0; i < user.card.length; i++) {
+        if (user.card[i].posi === 1) {			//说明该卡在手牌
 
-            drawOneCard(context, mycard[i], mycard[i].posx, mycard[i].posy);
+            drawOneCard(context, user.card[i], user.card[i].posx, user.card[i].posy);
 
-        } else if (mycard[i].posi === 2) {	//说明该牌在场上
+        } else if (user.card[i].posi === 2) {	//说明该牌在场上
 
-            drawOneCard(context, mycard[i], mycard[i].posx, mycard[i].posy);
+            drawOneCard(context, user.card[i], user.card[i].posx, user.card[i].posy);
 
         } else {							//说明该牌在墓地
 
@@ -387,10 +407,10 @@ function handWhereCanPut() {
                     for(var i=0;i<7;i++){	//扫描手上7个位置
                         var canput = 1;
 
-                        for(var j=0;j<mycard.length;j++){//看自己手上的牌是否在该位置
+                        for(var j=0;j<user.card.length;j++){//看自己手上的牌是否在该位置
 
-                            if(mycard[j].posi!=1)continue;//如果不在手上就算了
-                            if(pointinrec(50+i*100,450,mycard[j].posx,mycard[j].posy)==0){		//不可放
+                            if(user.card[j].posi!=1)continue;//如果不在手上就算了
+                            if(pointinrec(50+i*100,450,user.card[j].posx,user.card[j].posy)==0){		//不可放
 
                                 canput = 0;
                                 break;
@@ -401,9 +421,9 @@ function handWhereCanPut() {
                     }
                     */
     var w = [0, 0, 0, 0, 0, 0];
-    for (let i = 0; i < mycard.length; i++) {
-        if (mycard[i].posi !== 1) continue;
-        w[mycard[i].post] = 1;
+    for (let i = 0; i < user.card.length; i++) {
+        if (user.card[i].posi !== 1) continue;
+        w[user.card[i].post] = 1;
 
     }
     for (var i = 0; i < w.length; i++) {
@@ -426,8 +446,8 @@ function pointinrec(px, py, beginx, beginy) {	//返回0表示在里面
 
     if (px < beginx) return 10;
     if (py < beginy) return 20;
-    if (px > beginx + cardWidth) return 30;
-    if (py > beginy + cardHeight) return 40;
+    if (px > beginx + constant.card.width) return 30;
+    if (py > beginy + constant.card.height) return 40;
     return 0;
 }
 
@@ -443,7 +463,7 @@ function drawOneCard(context, obj, beginx, beginy) {
 //				cxt.fillStyle = "white";
 
 
-//				cxt.rect(beginx,beginy,cardWidth,cardHeight);
+//				cxt.rect(beginx,beginy,constant.card.width,constant.card.height);
     context.stroke();
 
     context.fillStyle = "green";
@@ -459,7 +479,7 @@ function drawOneCard(context, obj, beginx, beginy) {
         context.fillStyle = "plum";
         context.fillText("正在休息", obj.posx + 20, obj.posy + 60);
     }
-    drawImg(obj.img, beginx, beginy, cardWidth, cardHeight);
+    drawImg(obj.img, beginx, beginy, constant.card.width, constant.card.height);
 
     if (obj.posi === 2) {
         context.fillStyle = "red";
@@ -471,13 +491,13 @@ function drawOneCard(context, obj, beginx, beginy) {
             context.fillStyle = "deepskyblue";
             var basegp = 40;
             var gp = basegp + obj.attack + obj.HP;
-            if (allT % gp >= gp / 4) {
+            if (global.T % gp >= gp / 4) {
                 context.fillText("z", obj.posx + 70, obj.posy);
             }
-            if (allT % gp >= gp * 2 / 4) {
+            if (global.T % gp >= gp * 2 / 4) {
                 context.fillText("z", obj.posx + 75, obj.posy - 9);
             }
-            if (allT % gp >= gp * 3 / 4) {
+            if (global.T % gp >= gp * 3 / 4) {
 
                 context.fillText("z", obj.posx + 80, obj.posy - 18);
             }
@@ -508,14 +528,15 @@ function ourGetCard() {
     var putpos = handWhereCanPut();
 
     if (cangetCrystal > 0) {
-        yourMaxCrystal += yourMaxCrystal < 10 ? 1 : 0;
-        yourNowCrystal = yourMaxCrystal;
+        user.maxCrystal += user.maxCrystal < 10 ? 1 : 0;
+        user.nowCrystal = user.maxCrystal;
         cangetCrystal--;
     }
 
     if (cangetCard === 0) return;
 
-    cangetCard = 0;
+    cangetCard--;
+    console.log(cangetCard)
 
     if (putpos === -1) {//手牌已经满了
         myshowinfoParam("我的手牌已经满了", 10);
@@ -526,39 +547,22 @@ function ourGetCard() {
     if (putpos !== -1) {
 
 
-        for (var i = 0; i < 1; i++) {
-            var ran = Math.floor(Math.random() * card.length);
-            var obj = card[ran];
+        for (let i = 0; i < 1; i++) {
 
-            var beginposx = 700;
-            var beginposy = 350;
+            let beginPosX = 700;
+            let beginPosY = 350;
             //模拟卡片从卡组到手上的动画效果
-            var newobj = {
-                img: obj.img,
-                name: obj.name,
-                cost: obj.cost,
-                attack: obj.attack,
-                HP: obj.HP,
-                font: obj.font,
-                posx: beginposx,
-                posy: beginposy,
-                post: putpos,
-                posi: 1,
-                sleeping: 1,
-                point: obj.point,
-                run: obj.run,
-                music: obj.music
-            };
-            pos = mycard.length;	//新得到的牌一定在最后面
+            let newobj = getCard(beginPosX, beginPosY, putpos);
+            pos = user.card.length;	//新得到的牌一定在最后面
 
-            mycard.push(newobj);
-            //		canInMyHand[putpos] = mycard.length-1;	//抽到手上，占个位置
+            user.card.push(newobj);
+            //		canInMyHand[putpos] = user.card.length-1;	//抽到手上，占个位置
             moveArray.push(
                 {
-                    idx: mycard.length - 1,
-                    beginT: allT, last: 25,
-                    beginposx: beginposx,
-                    beginposy: beginposy,
+                    idx: user.card.length - 1,
+                    beginT: global.T, last: 25,
+                    beginposx: beginPosX,
+                    beginposy: beginPosY,
                     endposx: calMyHandPosX(putpos),
                     endposy: calMyHandPosY(putpos)
                 }//TODO
@@ -567,7 +571,6 @@ function ourGetCard() {
 
         }
 
-        cangetCard = 0;
     }
 
 
@@ -579,12 +582,12 @@ function ourGetCard() {
  */
 function getGoodPlaceToWar(whouse) {
     canput = -1;
-    if (whouse === mycard) {
+    if (whouse === user.card) {
         for (var i = 0; i < 7; i++) {
             var flag = 1;
-            for (let j = 0; j < mycard.length; j++) {
-                if (mycard[j].posi !== 2) continue;
-                if (pointinrec(50 + 100 * i, 350, mycard[j].posx, mycard[j].posy) === 0) {
+            for (let j = 0; j < user.card.length; j++) {
+                if (user.card[j].posi !== 2) continue;
+                if (pointinrec(50 + 100 * i, 350, user.card[j].posx, user.card[j].posy) === 0) {
                     flag = 0;
                     break;
                 }
@@ -598,14 +601,14 @@ function getGoodPlaceToWar(whouse) {
         }
         return -1;
     }
-    if (whouse === computercard) {
+    if (whouse === computer.card) {
         var goodpos = -1;
         for (var j = 0; j < 7; j++) {//找合适的位置放下怪兽
             var flag = 1;
-            for (var k = 0; k < computercard.length; k++) {
-                if (computercard[k].posi !== 2) continue;
-                //	myshowinfoParam((computercard[k].posi==1)+","+pointinrec(j*100+50,150,computercard[k].posx,computercard[k].posy)+flag,30);
-                if (pointinrec(j * 100 + 50, 150, computercard[k].posx, computercard[k].posy) === 0) {
+            for (var k = 0; k < computer.card.length; k++) {
+                if (computer.card[k].posi !== 2) continue;
+                //	myshowinfoParam((computer.card[k].posi==1)+","+pointinrec(j*100+50,150,computer.card[k].posx,computer.card[k].posy)+flag,30);
+                if (pointinrec(j * 100 + 50, 150, computer.card[k].posx, computer.card[k].posy) === 0) {
                     flag = 0;
                     break;
                 }
@@ -643,24 +646,24 @@ function chooseIt(who) {
 
 function computerOp(context) {
     if (turnover === 0) return; //还没到电脑回合,不往下执行
-    if (allT % 20 === 0) {   //每隔2秒时间进行一次操作
+    if (global.T % 20 === 0) {   //每隔2秒时间进行一次操作
         var obj = computerCanDoing();
 
         if (obj.state === NOTHINGTODO) {	//如果电脑没事情做了，那么就回到玩家回合
             turnover = 0;
             cangetCrystal = 1;
             cangetCard = 1;
-            for (var i = 0; i < computercard.length; i++) {
-                if (computercard[i].choosed === 1) computercard[i].choosed = 0;	//法术下个回合可以进行选择
-                if (computercard[i].posi === 2) {
-                    computercard[i].sleeping = 0;//让随从不再休息
+            for (var i = 0; i < computer.card.length; i++) {
+                if (computer.card[i].choosed === 1) computer.card[i].choosed = 0;	//法术下个回合可以进行选择
+                if (computer.card[i].posi === 2) {
+                    computer.card[i].sleeping = 0;//让随从不再休息
                 }
             }
             return;
 
         } else {
 
-            doComputer(context,obj);
+            doComputer(context, obj);
             return;
         }
 
@@ -674,21 +677,21 @@ function computerOp(context) {
  */
 function asForComputerHero(idx) {
 
-    if (mycard[idx].name === "变形术") return -1;
-    if (mycard[idx].name === "暗杀") return -1;
-    if (mycard[idx].name === "火球术") {
-        computerHP -= 6;
-        mycard[idx].posi = 3;
-        yourNowCrystal -= mycard[idx].cost;
+    if (user.card[idx].name === "变形术") return -1;
+    if (user.card[idx].name === "暗杀") return -1;
+    if (user.card[idx].name === "火球术") {
+        computer.HP -= 6;
+        user.card[idx].posi = 3;
+        user.nowCrystal -= user.card[idx].cost;
         tx.push(
             {
                 funname: "fireTX",
                 fun: fireTX,
-                beginPosX: mycard[idx].posx,
-                beginPosY: mycard[idx].posy,
-                endPosX: computerHeadx + cardWidth / 2,
-                endPosY: computerHeady + cardHeight / 2,
-                beginT: allT,
+                beginPosX: user.card[idx].posx,
+                beginPosY: user.card[idx].posy,
+                endPosX: computerHeadx + constant.card.width / 2,
+                endPosY: computerHeady + constant.card.height / 2,
+                beginT: global.T,
                 lastT: 15
             }
         );
@@ -698,20 +701,20 @@ function asForComputerHero(idx) {
 
     tx.push({
         funname: "attackTX",
-        fun: attackTX, who: "mycard",
+        fun: attackTX, who: "user.card",
         myidx: idx,
-        beginX: mycard[idx].posx,
-        beginY: mycard[idx].posy,
+        beginX: user.card[idx].posx,
+        beginY: user.card[idx].posy,
         endX: computerHeadx,
         endY: computerHeady,
-        beginT: allT,
+        beginT: global.T,
         lastT: 15
     });
 
-    computerHP -= mycard[idx].attack;
+    computer.HP -= user.card[idx].attack;
 
 
-    mycard[idx].sleeping = 1;
+    user.card[idx].sleeping = 1;
     linexx = lineyy = -1;
 
     return -100;
@@ -729,14 +732,14 @@ function privatemyshow(info) {
     cxt.fillStyle = "white";
 
     cxt.font = "32px Arial";
-    if (allT < infoLastTime) cxt.fillText(info, 0, 65);
+    if (global.T < infoLastTime) cxt.fillText(info, 0, 65);
     cxt.restore();
     cxt.closePath();
 }
 
 function myshowinfoParam(inf, lasttime) {
     info = inf;
-    infoLastTime = allT + lasttime;
+    infoLastTime = global.T + lasttime;
 
 }
 
@@ -815,9 +818,9 @@ function drawButton() {
         /*
          * 让场上的怪解除睡觉
          */
-        for (var i = 0; i < mycard.length; i++) {
-            if (mycard[i].posi === 2) {
-                mycard[i].sleeping = 0;
+        for (var i = 0; i < user.card.length; i++) {
+            if (user.card[i].posi === 2) {
+                user.card[i].sleeping = 0;
             }
         }
 
@@ -831,10 +834,10 @@ function drawButton() {
  * 判断你按下的点是否在以x,y为起始点,w,h为宽高的矩形里面
  */
 function judgeRec(x, y, w, h) {
-    if (mymouseY < y) return 0;
-    if (mymouseY > y + h) return 0;
-    if (mymouseX < x) return 0;
-    if (mymouseX > x + w) return 0;
+    if (global.mouse.y < y) return 0;
+    if (global.mouse.y > y + h) return 0;
+    if (global.mouse.x < x) return 0;
+    if (global.mouse.x > x + w) return 0;
     return 1;
 }
 
@@ -842,20 +845,20 @@ function myattack(cardidx, tar) {
 
     tx.push({
         funname: "attackTX",
-        fun: attackTX, who: "mycard",
+        fun: attackTX, who: "user.card",
         myidx: cardidx,
         goal: tar,
-        beginX: mycard[cardidx].posx,
-        beginY: mycard[cardidx].posy,
-        endX: computercard[tar].posx,
-        endY: computercard[tar].posy,
-        beginT: allT, lastT: 15
+        beginX: user.card[cardidx].posx,
+        beginY: user.card[cardidx].posy,
+        endX: computer.card[tar].posx,
+        endY: computer.card[tar].posy,
+        beginT: global.T, lastT: 15
     });
-    mycard[cardidx].HP -= computercard[tar].attack;
-    computercard[tar].HP -= mycard[cardidx].attack;
-    mycard[cardidx].sleeping = 1;
-//				if(mycard[cardidx].HP<=0)mycard[cardidx].posi=3;
-//				if(computercard[tar].HP<=0)computercard[tar].posi=3;
+    user.card[cardidx].HP -= computer.card[tar].attack;
+    computer.card[tar].HP -= user.card[cardidx].attack;
+    user.card[cardidx].sleeping = 1;
+//				if(user.card[cardidx].HP<=0)user.card[cardidx].posi=3;
+//				if(computer.card[tar].HP<=0)computer.card[tar].posi=3;
     linexx = lineyy = -1;
 
 }
@@ -878,13 +881,13 @@ function drawMagicLine(context) {
 
     context.beginPath();
     context.moveTo(linexx, lineyy);
-    context.lineTo(mymouseX, mymouseY);
+    context.lineTo(global.mouse.x, global.mouse.y);
     context.stroke();
     context.closePath();
 
     context.beginPath();
     context.moveTo(linexx - 5, lineyy - 5);
-    context.lineTo(mymouseX - 5, mymouseY - 5);
+    context.lineTo(global.mouse.x - 5, global.mouse.y - 5);
     context.stroke();
     context.closePath();
 
@@ -899,9 +902,9 @@ var showtime = 10;
 function drawDetailedDescription(context) {
     if (isfang === 0) return;
     var idx = -1;
-    for (var i = 0; i < mycard.length; i++) {
-        if (mycard[i].posi === 1 || mycard[i].posi === 2) {//在我方手牌或在场上
-            if (judgeRec(mycard[i].posx, mycard[i].posy, cardWidth, cardHeight) === 1) {
+    for (var i = 0; i < user.card.length; i++) {
+        if (user.card[i].posi === 1 || user.card[i].posi === 2) {//在我方手牌或在场上
+            if (judgeRec(user.card[i].posx, user.card[i].posy, constant.card.width, constant.card.height) === 1) {
 
                 idx = i;
 
@@ -917,15 +920,15 @@ function drawDetailedDescription(context) {
     if (idx !== -1) {
         context.save();
         context.beginPath();
-        drawImg(mycard[idx].img, mymouseX, mymouseY - 350, cardWidth * 3, cardHeight * 3);
+        drawImg(user.card[idx].img, global.mouse.x, global.mouse.y - 350, constant.card.width * 3, constant.card.height * 3);
         context.closePath();
         context.restore();
         return;
 
     }
-    for (let i = 0; i < computercard.length; i++) {
-        if (computercard[i].posi === 2) {//在对方场上
-            if (judgeRec(computercard[i].posx, computercard[i].posy, cardWidth, cardHeight) === 1) {
+    for (let i = 0; i < computer.card.length; i++) {
+        if (computer.card[i].posi === 2) {//在对方场上
+            if (judgeRec(computer.card[i].posx, computer.card[i].posy, constant.card.width, constant.card.height) === 1) {
 
                 idx = i;
 
@@ -943,7 +946,7 @@ function drawDetailedDescription(context) {
         cxt.save();
         cxt.beginPath();
 
-        drawImg(computercard[idx].img, mymouseX, mymouseY, cardWidth * 3, cardHeight * 3);
+        drawImg(computer.card[idx].img, global.mouse.x, global.mouse.y, constant.card.width * 3, constant.card.height * 3);
 
         cxt.closePath();
         cxt.restore();
@@ -959,11 +962,11 @@ function drawDetailedDescription(context) {
 function tuo() {
 
     if (isfang === 0 && cardidx !== -1) {
-        tempx = tempx === -1 ? mycard[cardidx].posx : tempx;
-        tempy = tempy === -1 ? mycard[cardidx].posy : tempy;
-        //		temp = mycard[cardidx];
-        mycard[cardidx].posx = mymouseX - cardWidth / 2;
-        mycard[cardidx].posy = mymouseY - cardHeight / 2;
+        tempx = tempx === -1 ? user.card[cardidx].posx : tempx;
+        tempy = tempy === -1 ? user.card[cardidx].posy : tempy;
+        //		temp = user.card[cardidx];
+        user.card[cardidx].posx = global.mouse.x - constant.card.width / 2;
+        user.card[cardidx].posy = global.mouse.y - constant.card.height / 2;
 
     }
 }
@@ -989,7 +992,7 @@ function domagic(whoAttack, idx, goal, goalIdx) {
                 beginPosY: whoAttack[idx].posy,
                 endPosX: goal[goalIdx].posx,
                 endPosY: goal[goalIdx].posy,
-                beginT: allT,
+                beginT: global.T,
                 lastT: 15
             }
         );
@@ -1002,7 +1005,7 @@ function domagic(whoAttack, idx, goal, goalIdx) {
             fun: killTX,
             posx: goal[goalIdx].posx,
             posy: goal[goalIdx].posy,
-            beginT: allT,
+            beginT: global.T,
             lastT: 8
         });
         goal[goalIdx].posi = 3;
@@ -1023,10 +1026,10 @@ function domagic(whoAttack, idx, goal, goalIdx) {
         cangetCard = 1;
     }
     whoAttack[idx].posi = 3;
-    if (whoAttack === mycard) {
-        yourNowCrystal -= whoAttack[idx].cost;
+    if (whoAttack === user.card) {
+        user.nowCrystal -= whoAttack[idx].cost;
     } else {
-        computerNowCrystal -= whoAttack[idx].cost;
+        computer.nowCrystal -= whoAttack[idx].cost;
     }
 
 
@@ -1039,73 +1042,73 @@ function domagic(whoAttack, idx, goal, goalIdx) {
  */
 function doNOPointFunction(whouse, cardidx) {
     if (whouse[cardidx].name === "扭曲虚空") {
-        tx.push({funname: "blackTX", fun: blackTX, beginT: allT, lastT: 15});
-        for (let i = 0; i < mycard.length; i++) {
-            if (mycard[i].posi === 2) {
-                mycard[i].posi = 3;
+        tx.push({funname: "blackTX", fun: blackTX, beginT: global.T, lastT: 15});
+        for (let i = 0; i < user.card.length; i++) {
+            if (user.card[i].posi === 2) {
+                user.card[i].posi = 3;
 
             }
         }
-        for (let i = 0; i < computercard.length; i++) {
-            if (computercard[i].posi === 2) {
-                computercard[i].posi = 3;
+        for (let i = 0; i < computer.card.length; i++) {
+            if (computer.card[i].posi === 2) {
+                computer.card[i].posi = 3;
             }
 
         }
-        if (whouse === mycard) {
-            yourNowCrystal -= whouse[cardidx].cost;
-        } else if (whouse === computercard) {
-            computerNowCrystal -= whouse[cardidx].cost;
+        if (whouse === user.card) {
+            user.nowCrystal -= whouse[cardidx].cost;
+        } else if (whouse === computer.card) {
+            computer.nowCrystal -= whouse[cardidx].cost;
         }
         whouse[cardidx].posi = 3;
     } else if (whouse[cardidx].name === "魔爆术") {
 
-        if (whouse === mycard) {
-            for (let i = 0; i < computercard.length; i++) {
-                if (computercard[i].posi === 2) {
-                    computercard[i].HP -= 1;
-                    if (computercard[i].HP <= 0) computercard[i].posi = 3;
+        if (whouse === user.card) {
+            for (let i = 0; i < computer.card.length; i++) {
+                if (computer.card[i].posi === 2) {
+                    computer.card[i].HP -= 1;
+                    if (computer.card[i].HP <= 0) computer.card[i].posi = 3;
                 }
             }
 
         }
-        if (whouse === computercard) {
-            for (let i = 0; i < mycard.length; i++) {
-                if (mycard[i].posi === 2) {
-                    mycard[i].HP -= 1;
-                    if (mycard[i].HP <= 0) mycard[i].posi = 3;
+        if (whouse === computer.card) {
+            for (let i = 0; i < user.card.length; i++) {
+                if (user.card[i].posi === 2) {
+                    user.card[i].HP -= 1;
+                    if (user.card[i].HP <= 0) user.card[i].posi = 3;
                 }
             }
 
         }
-        if (whouse === mycard) {
-            yourNowCrystal -= whouse[cardidx].cost;
-        } else if (whouse === computercard) {
-            computerNowCrystal -= whouse[cardidx].cost;
+        if (whouse === user.card) {
+            user.nowCrystal -= whouse[cardidx].cost;
+        } else if (whouse === computer.card) {
+            computer.nowCrystal -= whouse[cardidx].cost;
         }
         whouse[cardidx].posi = 3;
     } else if (whouse[cardidx].name === "裂解魔杖") {
 
-        if (whouse === mycard) {
-            for (let i = 0; i < computercard.length; i++) {
-                if (computercard[i].posi === 2) {
-                    computercard[i].posi = 3;
+        if (whouse === user.card) {
+            for (let i = 0; i < computer.card.length; i++) {
+                if (computer.card[i].posi === 2) {
+                    computer.card[i].posi = 3;
                 }
             }
 
         }
-        if (whouse === computercard) {
-            for (let i = 0; i < mycard.length; i++) {
-                if (mycard[i].posi === 2) {
-                    mycard[i].posi = 3;
+        if (whouse === computer.card) {
+            for (let i = 0; i < user.card.length; i++) {
+                if (user.card[i].posi === 2) {
+                    user.card[i].posi = 3;
                 }
             }
 
         }
-        if (whouse === mycard) {
-            yourNowCrystal -= whouse[cardidx].cost;
-        } else if (whouse === computercard) {
-            computerNowCrystal -= whouse[cardidx].cost;
+        if (whouse === user.card) {
+            user.nowCrystal -= whouse[cardidx].cost;
+        } else if (whouse === computer.card) {
+            computer.nowCrystal -= whouse[cardidx].cost;
         }
         whouse[cardidx].posi = 3;
     } else if (whouse[cardidx].name === "工程师学徒") {
@@ -1113,7 +1116,7 @@ function doNOPointFunction(whouse, cardidx) {
 
     } else if (whouse[cardidx].name === "剃刀猎手") {
 
-        if (whouse === mycard) {
+        if (whouse === user.card) {
             let p = getChangPosFormyself();
 
             if (p !== -1) {
@@ -1133,7 +1136,7 @@ function doNOPointFunction(whouse, cardidx) {
             }
 
         }
-        if (whouse === computercard) {
+        if (whouse === computer.card) {
             var p = getChangPosForcomputer();
             if (p !== -1) {
                 whouse.push({
@@ -1167,9 +1170,9 @@ function doNOPointFunction(whouse, cardidx) {
 
 function getChangPosForcomputer() {
     var ww = [0, 0, 0, 0, 0, 0, 0];
-    for (let i = 0; i < computercard.length; i++) {
-        if (computercard[i].posi === 2) {
-            ww[computercard[i].post] = 1;
+    for (let i = 0; i < computer.card.length; i++) {
+        if (computer.card[i].posi === 2) {
+            ww[computer.card[i].post] = 1;
 
         }
     }
@@ -1182,9 +1185,9 @@ function getChangPosForcomputer() {
 //我方从手牌召唤怪兽时候，挑选位置,返回0-6或-1
 function getChangPosFormyself() {
     let ww = [0, 0, 0, 0, 0, 0, 0];
-    for (let i = 0; i < mycard.length; i++) {
-        if (mycard[i].posi === 2) {
-            ww[mycard[i].post] = 1;
+    for (let i = 0; i < user.card.length; i++) {
+        if (user.card[i].posi === 2) {
+            ww[user.card[i].post] = 1;
 
         }
     }
@@ -1201,6 +1204,57 @@ function getChangPosFormyself() {
  */
 
 var mygoal = -1;
+
+/**
+ * 获取指定的目标索引
+ * @returns {number}
+ * 如果是100 则为指定 我方英雄
+ * 如果是-100 则为指定 敌方英雄
+ * 如果是正数， 则为我方场上随从
+ * 如果是负数， 则为敌方场上随从
+ */
+function getTheSpecifiedTargetIndex() {
+    for (let i = 0; i < user.card.length; i++) {	//看是否指定我方场上 0为指定自己
+        if (user.card[i].posi !== 2) continue;
+        if (judgeRec(user.card[i].posx, user.card[i].posy, constant.card.width, constant.card.height)) {
+            // mygoal = i;
+            // domagic(user.card, cardidx, user.card, mygoal);
+            // break;
+            return {
+                obj: user.card[i],
+                type: constant.POINT.MY_SERVANTS
+            };
+        }
+
+    }
+    for (let i = 0; i < computer.card.length; i++) {	//看是否指定对方场上 1为指定对方
+        if (computer.card[i].posi !== 2) continue;
+
+        if (judgeRec(computer.card[i].posx, computer.card[i].posy, constant.card.width, constant.card.height)) {
+            // mygoal = i;
+            //		domagic(0,user.card[cardidx].name,"1",mygoal);
+            // domagic(user.card, cardidx, computer.card, mygoal);
+            // break;
+            return {
+                obj: computer.card[i],
+                type: constant.POINT.HIS_SERVANTS,
+            }
+            // return computer.card[i];
+        }
+
+    }
+    //		如果指定的是对方英雄
+    if (judgeRec(computerHeadx, computerHeady, constant.card.width, constant.card.height)) {
+
+        return {
+            type:constant.POINT.HIS_HERO,
+            obj:computer
+        };
+
+    }
+
+}
+
 $(document).ready(function () {
 
     myinit();
@@ -1241,28 +1295,28 @@ $(document).ready(function () {
         /**
          * 判断是否到自己回合
          */
-        if (turnover == 1) {
+        if (turnover === 1) {
             myshowinfoParam("现在还没到您的回合", 30);
             return;
         }
         /**
          * 看是否选中手中的牌
          */
-        for (let i = 0; i < mycard.length; i++) {
-            if (mycard[i].posi === 1) {				//看是否选中手中的卡
+        for (let i = 0; i < user.card.length; i++) {
+            if (user.card[i].posi === 1) {				//看是否选中手中的卡
                 //到moveArray数组里找这张卡 看这张卡是否正在移动，如果在移动，那么就不能选中,
-                let canchoose = 1;
+                let canChoose = 1;
                 for (let kk = 0; kk < moveArray.length; kk++) {
-//										console.log("i="+i+" allT="+allT+" moveArray[kk].idx="+moveArray[kk].idx+" moveArray[kk].beginT="+moveArray[kk].beginT+" moveArray[kk].lastT="+moveArray[kk].lastT);
-                    if (i === moveArray[kk].idx && allT - moveArray[kk].beginT <= moveArray[kk].last) //TODO
+//										console.log("i="+i+" global.T="+global.T+" moveArray[kk].idx="+moveArray[kk].idx+" moveArray[kk].beginT="+moveArray[kk].beginT+" moveArray[kk].lastT="+moveArray[kk].lastT);
+                    if (i === moveArray[kk].idx && global.T - moveArray[kk].beginT <= moveArray[kk].last) //TODO
                     {
-                        canchoose = 0;
+                        canChoose = 0;
 
                     }
                 }
-                if (canchoose === 0) continue;
+                if (canChoose === 0) continue;
 
-                if (mycard[i].point === POINTNO && judgeRec(mycard[i].posx, mycard[i].posy, cardWidth, cardHeight)) {//若不为指向性卡片
+                if (user.card[i].point === POINTNO && judgeRec(user.card[i].posx, user.card[i].posy, constant.card.width, constant.card.height)) {//若不为指向性卡片
 
 
                     ////////////////////
@@ -1271,14 +1325,14 @@ $(document).ready(function () {
                     cardidx = i;
 
 
-                } else if (mycard[i].point !== undefined && mycard[i].point !== POINTNO && judgeRec(mycard[i].posx, mycard[i].posy, cardWidth, cardHeight)) {
-                    tempx = Math.ceil(mycard[i].posx - 50) / 100 * 100 + 50;
+                } else if (user.card[i].point !== undefined && user.card[i].point !== POINTNO && judgeRec(user.card[i].posx, user.card[i].posy, constant.card.width, constant.card.height)) {
+                    tempx = Math.ceil(user.card[i].posx - 50) / 100 * 100 + 50;
 
                     tempy = 450;
                     cardidx = i;
                     itbegin = 1;//表示在手上
-                    lineyy = lineyy === -1 ? mymouseY : lineyy;
-                    linexx = linexx === -1 ? mymouseX : linexx;
+                    lineyy = lineyy === -1 ? global.mouse.y : lineyy;
+                    linexx = linexx === -1 ? global.mouse.x : linexx;
                     //	str+= "\nlineYY"+lineyy+"lineXX"+linexx;
                 }
             }
@@ -1288,20 +1342,20 @@ $(document).ready(function () {
         /**
          * 看是否选中场上的卡
          */
-        for (var i = 0; i < mycard.length; i++) {
-            if (mycard[i].posi === 2) {
+        for (var i = 0; i < user.card.length; i++) {
+            if (user.card[i].posi === 2) {
 
-                if (judgeRec(mycard[i].posx, mycard[i].posy, cardWidth, cardHeight)) {
+                if (judgeRec(user.card[i].posx, user.card[i].posy, constant.card.width, constant.card.height)) {
                     cardidx = i;
-                    if (mycard[cardidx].sleeping === 1) {
+                    if (user.card[cardidx].sleeping === 1) {
                         myshowinfoParam("该随从还在休息", 30);
                         cardidx = -1;
                         return;
                     } else {
 
                         itbegin = 2; //表示刚开始在场上
-                        lineyy = lineyy === -1 ? mymouseY : lineyy;
-                        linexx = linexx === -1 ? mymouseX : linexx;
+                        lineyy = lineyy === -1 ? global.mouse.y : lineyy;
+                        linexx = linexx === -1 ? global.mouse.x : linexx;
                     }
                 }
             }
@@ -1319,96 +1373,111 @@ $(document).ready(function () {
     $("#mycan").mouseup(function () {
 
 
-        if (itbegin == 1) {	//如果刚开始是在手牌
+        if (itbegin === 1) {	//如果刚开始是在手牌
             //	if(cardidx==-1)return;
-            if (mymouseY < 450) {
+            if (global.mouse.y < 450) {
 
-                if (mycard[cardidx].cost > yourNowCrystal) {	//如果费用不足
+                if (user.card[cardidx].cost > user.nowCrystal) {	//如果费用不足
                     mygoal = -1;
                     lineyy = linexx = -1;
                     myshowinfoParam("您没有足够的法力值", 30);
-                    mycard[cardidx].posx = calMyHandPosX(mycard[cardidx].post);
-                    mycard[cardidx].posy = calMyHandPosY(mycard[cardidx].post);
-                    ;
-
+                    user.card[cardidx].posx = calMyHandPosX(user.card[cardidx].post);
+                    user.card[cardidx].posy = calMyHandPosY(user.card[cardidx].post);
 
                     tempx = tempy = -1;
 
-                } else if (mycard[cardidx].attack != '法术') {		//如果这张卡不是法术，默认为怪兽
+                    return;
+                }
+                if (user.card[cardidx].attack !== '法术') {		//如果这张卡不是法术，默认为怪兽
+
 
                     /**
                      * 先找个位置安顿他
                      */
-
-
-
                     tempx = tempy = -1;
 
-
-                    yourNowCrystal -= mycard[cardidx].cost;
+                    user.nowCrystal -= user.card[cardidx].cost;
                     //挑选一个合适的位置，放置该随从
+                    let canPut = getChangPosFormyself();
 
-                    var canput = getChangPosFormyself();
 
-
-                    if (canput == -1) {
+                    if (canPut === -1) {
                         myshowinfoParam("对不起，您的场已经满了", 30);
 
                         return;
                     } else {
-                        mycard[cardidx].posx = calMyChangPosX(canput);
-                        mycard[cardidx].posy = calMyChangPosY(canput);
-                        mycard[cardidx].posi = 2; //放置在场上
-                        mycard[cardidx].post = canput;//具体位置
-                        doNOPointFunction(mycard, cardidx);
+                        user.card[cardidx].posx = calMyChangPosX(canPut);
+                        user.card[cardidx].posy = calMyChangPosY(canPut);
+                        user.card[cardidx].posi = 2; //放置在场上
+                        user.card[cardidx].post = canPut;//具体位置
+                        doNOPointFunction(user.card, cardidx);
                     }
 
 
-                } else if (mycard[cardidx].attack == '法术') {
+                } else if (user.card[cardidx].type === constant.card.TYPE.MAGIC) {//如果是法术
 
-                    if (mycard[cardidx].point != POINTNO) {//如果是指向性法术
-                        /**
-                         * 释放法术 看该法术的目标
-                         */
-                        for (var i = 0; i < mycard.length; i++) {	//看是否指定我方场上 0为指定自己
-                            if (mycard[i].posi != 2) continue;
+                    //如果是指向性法术
+                    if (user.card[cardidx].point !== constant.POINT.NO) {
+                        //获取鼠标指向的对象
+                        let theSpecifiedTarget = getTheSpecifiedTargetIndex();
+                        //如果卡片的类型与鼠标指向类型一致
+                        if ((theSpecifiedTarget.type & user.card[cardidx].point) !== 0) {
+                            if (theSpecifiedTarget.type === constant.POINT.MY_HERO) {
+                                //对我方英雄释放法术,使用这张牌
+                                user.card[cardidx].play(user, user)
+                            } else if (theSpecifiedTarget.type === constant.POINT.HIS_HERO) {
+                                //对敌方英雄释放法术
+                                user.card[cardidx].play(computer, user)
+                            } else if (theSpecifiedTarget.type === constant.POINT.MY_SERVANTS) {
+                                //对我方随从释放法术
+                                user.card[cardidx].play(theSpecifiedTarget.obj, user);
+                                console.log("对我方随从释放法术" + user.card[cardidx].name)
+                            } else if (theSpecifiedTarget.type === constant.POINT.HIS_SERVANTS) {
+                                //对敌方随从释放法术
+                                user.card[cardidx].play(theSpecifiedTarget.obj, user)
 
-                            if (judgeRec(mycard[i].posx, mycard[i].posy, cardWidth, cardHeight)) {
-                                mygoal = i;
-                                domagic(mycard, cardidx, mycard, mygoal);
-
-                                break;
                             }
+                            //将用过的卡片放入墓地
+                            user.card[cardidx].posi = constant.card.POSITION.CEMETERY;
+
+                        } else {
+                            myshowinfoParam("这不是一个有效的目标", 30);
+                            return;
 
                         }
-                        for (var i = 0; i < computercard.length; i++) {	//看是否指定对方场上 1为指定对方
-                            if (computercard[i].posi != 2) continue;
+                        /*
+                                                if (theSpecifiedTargetIndex === constant.point.MY_HERO && (user.card[cardidx].point & constant.POINT.MY_HERO) === constant.POINT.MY_HERO) {//指向我方英雄的
+                                                    if (user.card[cardidx].play) {
+                                                        user.card[cardidx].play(user)
+                                                    }
+                                                } else {
+                                                    myshowinfoParam("这不是一个有效的目标", 30);
+                                                    return
+                                                }
+                                                if (theSpecifiedTargetIndex === computer && (user.card[cardidx].point & constant.POINT.HIS_HERO) === constant.POINT.HIS_HERO) {//指向敌方英雄的
+                                                    if (user.card[cardidx].play) {
+                                                        user.card[cardidx].play(user)
+                                                    }
+                                                } else {
+                                                    myshowinfoParam("这不是一个有效的目标", 30);
+                                                    return
+                                                }
+                        */
 
-                            if (judgeRec(computercard[i].posx, computercard[i].posy, cardWidth, cardHeight)) {
-                                mygoal = i;
-                                //		domagic(0,mycard[cardidx].name,"1",mygoal);
-                                domagic(mycard, cardidx, computercard, mygoal);
-                                break;
-                            }
+                    } else if (user.card[cardidx].point === POINTNO) {//非指向性法术
 
-                        }
-                        //		如果指定的是对方英雄
-                        if (judgeRec(computerHeadx, computerHeady, cardWidth, cardHeight)) {
 
-                            mygoal = asForComputerHero(cardidx);
-
-                        }
-
-                    } else if (mycard[cardidx].point == POINTNO) {//非指向性法术
-
-                        doNOPointFunction(mycard, cardidx);
+                        user.card[cardidx].play(user)
+                        //将使用的法术移动到墓地里去
+                        user.card[cardidx].posi = constant.card.POSITION.CEMETERY;
+                        // doNOPointFunction(user.card, cardidx);
 
                         mygoal = 100;
 
                     }
 
 
-                    if (mygoal == -1) {
+                    if (mygoal === -1) {
                         lineyy = linexx = -1;
                         myshowinfoParam("这不是一个有效的目标", 30)
                     }
@@ -1420,16 +1489,16 @@ $(document).ready(function () {
 
 
             } else {
-                mycard[cardidx].posx = mycard[cardidx].post * (cardWidth + 3);
-                mycard[cardidx].posy = calMyHandPosY(-1);
+                user.card[cardidx].posx = user.card[cardidx].post * (constant.card.width + 3);
+                user.card[cardidx].posy = calMyHandPosY(-1);
 
             }
-        } else if (itbegin == 2) {	//说明刚刚开始在场上
+        } else if (itbegin === 2) {	//说明刚刚开始在场上
 
             var tar = -1;
-            for (var i = 0; i < computercard.length; i++) {
+            for (var i = 0; i < computer.card.length; i++) {
 
-                if (computercard[i].posi == 2 && pointinrec(mymouseX, mymouseY, computercard[i].posx, computercard[i].posy) == 0) {
+                if (computer.card[i].posi == 2 && pointinrec(global.mouse.x, global.mouse.y, computer.card[i].posx, computer.card[i].posy) == 0) {
                     tar = i;
                     break;
 
@@ -1437,7 +1506,7 @@ $(document).ready(function () {
 
             }
             //		如果指定的是对方英雄
-            if (judgeRec(computerHeadx, computerHeady, cardWidth, cardHeight)) {
+            if (judgeRec(computerHeadx, computerHeady, constant.card.width, constant.card.height)) {
 
                 tar = asForComputerHero(cardidx);
 
@@ -1464,8 +1533,8 @@ $(document).ready(function () {
      * 获得鼠标的x,y,并且可以把其放入变量中
      */
     $("#mycan").mousemove(function () {
-        mymouseX = window.event.clientX;
-        mymouseY = window.event.clientY;
+        global.mouse.x = window.event.clientX;
+        global.mouse.y = window.event.clientY;
 
     });
 
@@ -1479,14 +1548,14 @@ function show() {
     str = "isfang=" + isfang;
     str += ",cardidx=" + cardidx;
     str += ",itbegin=" + itbegin;
-    str += ",mymouseY=" + mymouseY;
+    str += ",global.mouse.y=" + global.mouse.y;
     str += ",tempx=" + tempx;
     str += ",tempy=" + tempy;
-    str += ",allT=" + allT;
+    str += ",global.T=" + global.T;
     str += ",lineXX" + linexx;
     str += ",lineyy" + lineyy;
-    str += ",mymousexx" + mymouseX;
-    str += ",mymouseY" + mymouseY;
+    str += ",mymousexx" + global.mouse.x;
+    str += ",global.mouse.y" + global.mouse.y;
 
     $(".test").html(str);
 

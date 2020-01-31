@@ -9,7 +9,7 @@
 function drawTX() {
 
     for (var i = 0; i < tx.length; i++) {
-        if (allT - tx[i].beginT > tx[i].lastT) {
+        if (global.T - tx[i].beginT > tx[i].lastT) {
             continue;
         }
         tx[i].fun(tx[i])
@@ -70,22 +70,22 @@ function killTX(obj) {
 
     var beginT = obj.beginT;
     var lastT = obj.lastT;
-    if (allT - beginT > lastT) return;
+    if (global.T - beginT > lastT) return;
     var mycan = document.getElementById("mycan");
     var cxt = mycan.getContext("2d");
     cxt.save();
     cxt.beginPath();
-    if (allT - beginT <= lastT / 2) {
+    if (global.T - beginT <= lastT / 2) {
         cxt.moveTo(beginX, beginY);
 
-        cxt.lineTo(beginX + cardWidth * (allT - beginT) / lastT * 2, beginY + cardHeight * (allT - beginT) / lastT * 2);
+        cxt.lineTo(beginX + constant.card.width * (global.T - beginT) / lastT * 2, beginY + constant.card.height * (global.T - beginT) / lastT * 2);
         cxt.stroke();
     } else {
         cxt.moveTo(beginX, beginY);
-        cxt.lineTo(beginX + cardWidth, beginY + cardHeight);
+        cxt.lineTo(beginX + constant.card.width, beginY + constant.card.height);
         cxt.stroke();
-        cxt.moveTo(beginX + cardWidth, beginY);
-        cxt.lineTo(beginX + cardWidth - cardWidth * (allT - beginT - lastT / 2) / lastT * 2, beginY + cardHeight * (allT - beginT - lastT / 2) / lastT * 2);
+        cxt.moveTo(beginX + constant.card.width, beginY);
+        cxt.lineTo(beginX + constant.card.width - constant.card.width * (global.T - beginT - lastT / 2) / lastT * 2, beginY + constant.card.height * (global.T - beginT - lastT / 2) / lastT * 2);
         cxt.stroke();
     }
 
@@ -110,12 +110,12 @@ function fireTX(obj) {
     cxt.beginPath();
 
     cxt.fillStyle = "red";
-//				var tpower = (allT-beginT)/lastT;
+//				var tpower = (global.T-beginT)/lastT;
     var sp = 20;
     var dx = (endPosX - beginPosX) / lastT;
     var dy = (endPosY - beginPosY) / lastT;
 
-    for (var i = 0; i <= (allT - beginT); i++) {
+    for (var i = 0; i <= (global.T - beginT); i++) {
 
         cxt.arc(beginPosX + dx * i, beginPosY + dy * i, 38, 0, 2 * Math.PI, true);
 
@@ -127,9 +127,9 @@ function fireTX(obj) {
 
 /**
  * 攻击特效 能动特效
- * @param {Object} who      卡片的英雄  mycard or computercard
+ * @param {Object} who      卡片的英雄  user.card or computer.card
  * @param {Object} myidx 该卡的索引
- * @param {Object} goal      目标英雄 mycard or computercard
+ * @param {Object} goal      目标英雄 user.card or computer.card
  * @param {Object} itidx 目标的索引
  */
 function attackTX(obj) {
@@ -142,23 +142,23 @@ function attackTX(obj) {
     let lastT = obj.lastT;
     let myidx = obj.myidx;
     let goal = obj.goal;
-    let t = allT - beginT;
+    let t = global.T - beginT;
 
     if (t > lastT) {
-        if (who == "mycard") {
-            if (mycard[myidx].HP <= 0) {
-                mycard[myidx].posi = 3;
+        if (who == "user.card") {
+            if (user.card[myidx].HP <= 0) {
+                user.card[myidx].posi = 3;
             }
-            if (goal != undefined && computercard[goal].HP <= 0) {
-                computercard[goal].posi = 3;
+            if (goal != undefined && computer.card[goal].HP <= 0) {
+                computer.card[goal].posi = 3;
             }
 
-        } else if (who == "computercard") {
-            if (computercard[myidx].HP <= 0) {
-                computercard[myidx].posi = 3;
+        } else if (who == "computer.card") {
+            if (computer.card[myidx].HP <= 0) {
+                computer.card[myidx].posi = 3;
             }
-            if (goal != undefined && mycard[goal].HP <= 0) {
-                mycard[goal].posi = 3;
+            if (goal != undefined && user.card[goal].HP <= 0) {
+                user.card[goal].posi = 3;
             }
         }
         return;
@@ -170,41 +170,41 @@ function attackTX(obj) {
             playMusic("music/打的声音.m4a")
             obj.playMusic = 1;
         }
-        if (who == "mycard") {
-            mycard[myidx].posx = beginX + (endX - beginX) * t / (lastT / 2);
-            mycard[myidx].posy = beginY + (endY - beginY) * t / (lastT / 2);
+        if (who == "user.card") {
+            user.card[myidx].posx = beginX + (endX - beginX) * t / (lastT / 2);
+            user.card[myidx].posy = beginY + (endY - beginY) * t / (lastT / 2);
 
-        } else if (who == "computercard") {
+        } else if (who == "computer.card") {
 
-            computercard[myidx].posx = beginX + (endX - beginX) * t / (lastT / 2);
-            computercard[myidx].posy = beginY + (endY - beginY) * t / (lastT / 2);
+            computer.card[myidx].posx = beginX + (endX - beginX) * t / (lastT / 2);
+            computer.card[myidx].posy = beginY + (endY - beginY) * t / (lastT / 2);
         }
 
 
     } else {   //后半部分
-        if (who == "mycard") {
-            mycard[myidx].posx = endX + (beginX - endX) * (t - lastT / 2) / (lastT / 2);
-            mycard[myidx].posy = endY + (beginY - endY) * (t - lastT / 2) / (lastT / 2);
+        if (who == "user.card") {
+            user.card[myidx].posx = endX + (beginX - endX) * (t - lastT / 2) / (lastT / 2);
+            user.card[myidx].posy = endY + (beginY - endY) * (t - lastT / 2) / (lastT / 2);
 
-        } else if (who == "computercard") {
-            computercard[myidx].posx = endX + (beginX - endX) * (t - lastT / 2) / (lastT / 2);
-            computercard[myidx].posy = endY + (beginY - endY) * (t - lastT / 2) / (lastT / 2);
+        } else if (who == "computer.card") {
+            computer.card[myidx].posx = endX + (beginX - endX) * (t - lastT / 2) / (lastT / 2);
+            computer.card[myidx].posy = endY + (beginY - endY) * (t - lastT / 2) / (lastT / 2);
         }
         if (t === lastT) {
-            if (who == "mycard") {
-                if (mycard[myidx].HP <= 0) {
-                    mycard[myidx].posi = 3;
+            if (who == "user.card") {
+                if (user.card[myidx].HP <= 0) {
+                    user.card[myidx].posi = 3;
                 }
-                if (goal != undefined && computercard[goal].HP <= 0) {
-                    computercard[goal].posi = 3;
+                if (goal != undefined && computer.card[goal].HP <= 0) {
+                    computer.card[goal].posi = 3;
                 }
 
-            } else if (who == "computercard") {
-                if (computercard[myidx].HP <= 0) {
-                    computercard[myidx].posi = 3;
+            } else if (who == "computer.card") {
+                if (computer.card[myidx].HP <= 0) {
+                    computer.card[myidx].posi = 3;
                 }
-                if (goal != undefined && mycard[goal].HP <= 0) {
-                    mycard[goal].posi = 3;
+                if (goal != undefined && user.card[goal].HP <= 0) {
+                    user.card[goal].posi = 3;
                 }
             }
         }
@@ -225,14 +225,14 @@ function blackTX(obj) {
     cxt.beginPath();
 
     cxt.fillStyle = "black";
-    cxt.arc(400, 300, (allT - obj.beginT) * 33, 0, 2 * Math.PI, true);
+    cxt.arc(400, 300, (global.T - obj.beginT) * 33, 0, 2 * Math.PI, true);
     cxt.fill();
     cxt.closePath();
 }
 
 function notMove(obj) {
 
-    if (allT - obj.beginT > 20) {
+    if (global.T - obj.beginT > 20) {
         return;
     }
     var mycan = document.getElementById("mycan");
@@ -249,16 +249,16 @@ function notMove(obj) {
 }
 
 function otherGetCard(obj) {
-    let dt = allT - obj.beginT
+    let dt = global.T - obj.beginT
 
-    let len = computercard.reduce((sum, val) => sum = sum + val.posi === 1 ? 1 : 1)
-    // let len = computercard.length;
+    let len = computer.card.reduce((sum, val) => sum = sum + val.posi === 1 ? 1 : 1)
+    // let len = computer.card.length;
 
     let dv_x = (700 - (15 * len + 300)) / 20;
     let dv_y = (200 - (-20)) / 20;
 
     if (dt === 20) {
-        computercard.push(obj.card);
+        computer.card.push(obj.card);
 
     }
     drawImg("img/黄金挑战.png", 700 - dv_x * dt, 200 - dt * dv_y, 45, 60);
